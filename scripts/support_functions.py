@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW parameter support functions
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-04-30
+# Created       2015-05-18
 # Python:       2.7
 #--------------------------------
 
@@ -909,7 +909,7 @@ def remap_check(remap_path):
 
     ## Trim comments longer than 80 characters
     if arcpy.GetInstallInfo()['Version'].startswith('10.2'):
-        remap_lines = [l[:80] if "#" in l else l for l in remap_lines]
+        remap_lines = [l[:79] if "#" in l else l for l in remap_lines]
         save_flag = True
 
     ## If lines were removed, resave the filtered remap file

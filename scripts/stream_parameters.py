@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW stream parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-04-27
+# Created       2015-05-19
 # Python:       2.7
 #--------------------------------
 
@@ -565,7 +565,7 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
         logging.info('\nRunning CRT')
         os.chdir(crt_ws)
         subprocess.check_call(crt_exe_name)
-        os.chdir(workspace)
+        os.chdir(hru.param_ws)
 
     except:
         logging.exception('Unhandled Exception Error\n\n')
