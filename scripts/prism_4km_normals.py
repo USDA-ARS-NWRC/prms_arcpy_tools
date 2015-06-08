@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW PRISM parameters from default 400m normals 
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-05-18
+# Created       2015-06-08
 # Python:       2.7
 #--------------------------------
 
@@ -124,7 +124,7 @@ def gsflow_prism_parameters(config_path, data_name='ALL',
         for data_name in data_name_list:
             logging.info('\n{0}'.format(data_name))
             prism_normal_re = re.compile(
-                'PRISM_(%s)_30yr_normal_4kmM2_(?P<month>\d{2})_bil.*$' % data_name,
+                'PRISM_(%s)_30yr_normal_4kmM2_(?P<month>\d{2})_bil.bil$' % data_name,
                 re.IGNORECASE)
 
             ## Search all files & subfolders in prism folder
