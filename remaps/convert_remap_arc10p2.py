@@ -2,7 +2,7 @@
 # Name:         convert_remap_arc10p2.py
 # Purpose:      PRMS Remap Modfiy
 # Author:       Charles Morton
-# Created       2015-04-30
+# Created       2015-05-18
 # Python:       2.7
 #--------------------------------
 
@@ -70,7 +70,7 @@ def prms_remap_modify(remap_folder):
                 for i, line in enumerate(comment_lines):
                     ## Replace California with abbreviation
                     ## Limit comments to 80 characters
-                    remap_f.write(line.replace('California', 'CA')[:80])
+                    remap_f.write(line.replace('California', 'CA')[:79])
                     ## Don't write newline character on last line
                     ## This causes an error in ArcGIS 10.2.2
                     if (i+1) == len(comment_lines):
