@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW CRT fill parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-04-27
+# Created       2015-06-09
 # Python:       2.7
 #--------------------------------
 
@@ -73,7 +73,7 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
         crt_flowflg = 1
         crt_iprn = 1
         crt_dpit = 0.01
-        crt_outitmax = 10000
+        crt_outitmax = 100000
 
         ## CRT Fill Parameters
         fill_ws_name = 'fill_work'
@@ -310,17 +310,16 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
         logging.info("\nOutput CRT fill files")
             
         ## Generate OUTFLOW_HRU.DAT for CRT
+        ## Generate outflow points at every subbasin gauge
         logging.info("  {0}".format(
             os.path.basename(fill_outflow_hru_path)))
         outflow_hru_list = []
         fields = [
-            hru.type_field, hru.iseg_field, hru.outseg_field, hru.reach_field,
-            hru.maxreach_field, hru.col_field, hru.row_field]
+            hru.type_field, hru.outflow_field, hru.subbasin_field,
+            hru.row_field, hru.col_field]
         for row in arcpy.da.SearchCursor(hru.polygon_path, fields):
-            if int(row[0]) <> 1 or int(row[1]) == 0:
-                continue
-            if int(row[2]) == 0 and int(row[3]) == int(row[4]): 
-                outflow_hru_list.append([int(row[6]), int(row[5])])
+            if int(row[0]) <> 0 and int(row[1]) == 1: 
+                outflow_hru_list.append([int(row[3]), int(row[4])])
         if outflow_hru_list:
             with open(fill_outflow_hru_path, 'w+') as f:
                 f.write('{0}    NUMOUTFLOWHRU\n'.format(
@@ -330,6 +329,28 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
                         i+1, outflow_hru[0], outflow_hru[1]))
             f.close()
         del outflow_hru_list
+
+##        ## Generate OUTFLOW_HRU.DAT for CRT
+##        logging.info("  {0}".format(
+##            os.path.basename(fill_outflow_hru_path)))
+##        outflow_hru_list = []
+##        fields = [
+##            hru.type_field, hru.iseg_field, hru.outseg_field, hru.reach_field,
+##            hru.maxreach_field, hru.col_field, hru.row_field]
+##        for row in arcpy.da.SearchCursor(hru.polygon_path, fields):
+##            if int(row[0]) <> 1 or int(row[1]) == 0:
+##                continue
+##            if int(row[2]) == 0 and int(row[3]) == int(row[4]): 
+##                outflow_hru_list.append([int(row[6]), int(row[5])])
+##        if outflow_hru_list:
+##            with open(fill_outflow_hru_path, 'w+') as f:
+##                f.write('{0}    NUMOUTFLOWHRU\n'.format(
+##                    len(outflow_hru_list)))
+##                for i, outflow_hru in enumerate(outflow_hru_list):
+##                    f.write('{0} {1} {2}   OUTFLOW_ID ROW COL\n'.format(
+##                        i+1, outflow_hru[0], outflow_hru[1]))
+##            f.close()
+##        del outflow_hru_list
 
         ## Generate HRU_CASC.DAT for CRT from hru_polygon
         logging.info("  {0}".format(os.path.basename(fill_hru_casc_path)))
@@ -411,7 +432,7 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
         logging.info('\nRunning CRT')
         os.chdir(fill_ws)
         subprocess.check_call(crt_exe_name)
-        os.chdir(workspace)
+        os.chdir(hru.param_ws)
 
         ## Read in outputstat.txt and get filled DEM
         logging.info("\nReading CRT {0}".format(output_name))
@@ -420,13 +441,19 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
             output_data = [l.strip() for l in f.readlines()]
         f.close()
 
-        ## Determine where filled data is in file
-        crt_dem_i = output_data.index(
-            'CRT FILLED LAND SURFACE MODEL USED TO GENERATE CASCADES')
-        crt_fill_i = output_data.index(
-            'DIFFERENCES BETWEEN FILLED AND UNFILLED LAND SURFACE MODELS')
-        crt_type_i = output_data.index(
-            'FINAL HRU CASCADE TYPE ARRAY USED TO COMPUTE CASCADES')
+        ## Determine where filled data is in the file
+        try:
+            crt_dem_i = output_data.index(
+                'CRT FILLED LAND SURFACE MODEL USED TO GENERATE CASCADES')
+            crt_fill_i = output_data.index(
+                'DIFFERENCES BETWEEN FILLED AND UNFILLED LAND SURFACE MODELS')
+            crt_type_i = output_data.index(
+                'FINAL HRU CASCADE TYPE ARRAY USED TO COMPUTE CASCADES')
+        except ValueError:
+            logging.error(
+                '\nERROR: CRT didn\'t completely run\n'+
+                '  Check the CRT outputstat.txt file\n')
+            raise SystemExit()
         logging.info('  Break indices: {0}, {1}, {2}'.format(
             crt_dem_i, crt_fill_i, crt_type_i))
         crt_dem_data = [r.split() for r in output_data[crt_dem_i+1:crt_fill_i-1]]

@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW parameter support functions
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-05-18
+# Created       2015-06-09
 # Python:       2.7
 #--------------------------------
 
@@ -255,6 +255,7 @@ class hru_parameters():
         self.strm_slope_field = fields_cfg.get('FIELDS', 'strm_slope_field')
         self.subbasin_field   = fields_cfg.get('FIELDS', 'subbasin_field')
         self.segbasin_field   = fields_cfg.get('FIELDS', 'segbasin_field')
+        self.outflow_field    = fields_cfg.get('FIELDS', 'outflow_field')
 
         ##if set_ppt_zones_flag:
         self.ppt_zone_id_field = fields_cfg.get('FIELDS', 'ppt_zone_id_field')
@@ -626,7 +627,8 @@ def get_param(param_str, param_default, config, section='INPUTS'):
     return param_value
 
 def build_file_list(ws, test_re, test_other_re=None):
-    if test_other_re is None: test_other_re=re.compile('a^')
+    if test_other_re is None:
+        test_other_re=re.compile('a^')
     if os.path.isdir(ws):
         return sorted([os.path.join(ws, item) for item in os.listdir(ws)
                        if (os.path.isfile(os.path.join(ws, item)) and 

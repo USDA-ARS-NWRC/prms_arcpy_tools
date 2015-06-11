@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW Flow Parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-05
+# Created       2015-06-09
 # Python:       2.7
 #--------------------------------
 
@@ -73,19 +73,32 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.debug('  set_lake_flag = False')
             set_lake_flag = False
 
-        ## Check whether ocean parameters should be calculated
+        ## Check whether inactive water parameters should be calculated
         try:
-            set_ocean_flag = inputs_cfg.getboolean('INPUTS', 'set_ocean_flag')
+            mask_inactive_cells_flag = inputs_cfg.getboolean(
+                'INPUTS', 'mask_inactive_cells_flag')
         except:
-            logging.debug('  set_ocean_flag = False')
-            set_ocean_flag = False
+            logging.debug('  mask_inactive_cells_flag = False')
+            mask_inactive_cells_flag = False
+            
+        ## Only compute streams for active cells
+        try:
+            set_inactive_water_flag = inputs_cfg.getboolean(
+                'INPUTS', 'set_inactive_water_flag')
+        except:
+            logging.debug('  set_inactive_water_flag = False')
+            set_inactive_water_flag = False
 
         ## Subbasin points
         subbasin_input_path = inputs_cfg.get('INPUTS', 'subbasin_points_path')
         subbasin_zone_field = inputs_cfg.get('INPUTS', 'subbasin_zone_field')
 
         ## Flow parameters
-        reset_dem_adj_flag = inputs_cfg.getboolean('INPUTS', 'reset_dem_adj_flag')
+        try:
+            reset_dem_adj_flag = inputs_cfg.getboolean('INPUTS', 'reset_dem_adj_flag')
+        except:
+            logging.debug('  reset_dem_adj_flag = False')
+            reset_dem_adj_flag = False
         calc_flow_dir_points_flag = inputs_cfg.getboolean(
             'INPUTS', 'calc_flow_dir_points_flag')
         calc_sinks_8_way_flag = inputs_cfg.getboolean(
@@ -172,6 +185,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         lake_id_path = os.path.join(flow_temp_ws, 'lake_id.img')
         dem_sink8_path = os.path.join(flow_temp_ws, 'dem_sink_8_way.img')
         dem_sink4_path = os.path.join(flow_temp_ws, 'dem_sink_4_way.img')
+        dem_edge_fill_path = os.path.join(flow_temp_ws, 'dem_edge_fill.img')
         dem_fill_path = os.path.join(flow_temp_ws, 'dem_fill.img')
         flow_dir_path = os.path.join(flow_temp_ws, 'flow_dir.img')
         flow_dir_points = os.path.join(flow_temp_ws, 'flow_dir_points.shp')
@@ -204,6 +218,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         add_field_func(hru.polygon_path, hru.flow_dir_field, 'LONG')
         add_field_func(hru.polygon_path, hru.dem_sink8_field, 'DOUBLE')
         add_field_func(hru.polygon_path, hru.dem_sink4_field, 'DOUBLE')
+        add_field_func(hru.polygon_path, hru.outflow_field, 'DOUBLE')
 
         ## Set environment parameters
         env.extent = hru.extent
@@ -251,19 +266,26 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 del lake_elev_array
 
 
-        ## Convert DEM_ADJ to raster
         logging.info('\nExporting HRU polygon parameters to raster')
-        logging.debug('  HRU_TYPE')
         ## Read in original HRU_TYPE for defining subbasins
+        logging.debug('  HRU_TYPE')
         arcpy.PolygonToRaster_conversion(
             hru.polygon_path, hru.type_in_field, hru_type_in_path,
             "CELL_CENTER", "", hru.cs)
         hru_type_in_obj = Raster(hru_type_in_path)
+
+        ## Convert DEM_ADJ to raster
         logging.debug('  DEM_ADJ')
         arcpy.PolygonToRaster_conversion(
             hru.polygon_path, hru.dem_adj_field, dem_adj_path,
             "CELL_CENTER", "", hru.cs)
-        dem_adj_obj = Raster(dem_adj_path)
+        if mask_inactive_cells_flag:
+            ## Set DEM_ADJ for inactive cells to nodata
+            ## This will force flow direction/accumulation to be in the study area
+            dem_adj_obj = Con(hru_type_in_obj <> 0, Raster(dem_adj_path))
+        else:
+            dem_adj_obj = Raster(dem_adj_path)
+        
         if set_lake_flag:
             logging.debug('  LAKE_ID')
             arcpy.PolygonToRaster_conversion(
@@ -273,8 +295,8 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
         ## Flow Direction
         logging.info('\nCalculating flow direction')
-        flow_dir_obj = FlowDirection(dem_adj_obj, True)
-        ##flow_dir_obj = FlowDirection(dem_adj_obj, False)
+        flow_dir_obj = FlowDirection(dem_adj_obj, False)
+        ##flow_dir_obj = FlowDirection(dem_adj_obj, True)
         flow_dir_obj.save(flow_dir_path)
         
 
@@ -300,13 +322,13 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ## Sinks (4-way)
         if calc_sinks_4_way_flag:
             logging.info('Calculating sinks (4-way)')
-            pnt = arcpy.Point()
-            pnt.X = hru.extent.XMin
-            pnt.Y = hru.extent.YMin
             dem_adj_array = raster_to_array(dem_adj_path)[0].astype(np.float)
             dem_sink4_array = flood_fill(dem_adj_array, True)
             dem_sink4_array -= dem_adj_array
             dem_sink4_array[dem_sink4_array == 0] = np.nan
+            pnt = arcpy.Point()
+            pnt.X = hru.extent.XMin
+            pnt.Y = hru.extent.YMin
             array_to_raster(dem_sink4_array, dem_sink4_path, pnt, hru.cs)
             if np.all(np.isnan(dem_sink4_array)):
                 logging.info('  No sinks (4-way)')
@@ -358,7 +380,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         with arcpy.da.SearchCursor(mem_point_path, fields) as s_cursor:
             for row in s_cursor:
                 ## Set nodata cells to 0
-                if row[1] is not None:
+                if row[0] is not None and row[1] is not None:
                     data_dict[int(row[1])][hru.flow_dir_field] = int(row[0])
                 del row
         logging.debug('  Writing flow direction values to polygon')
@@ -421,6 +443,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             ##env.cellsize = hru.cs
         else:
             arcpy.Copy_management(subbasin_input_path, subbasin_points_path)
+
             
         ## Select the HRU cells that intersect the subbasin point cells
         logging.debug('  Reading input subbasin points')
@@ -438,8 +461,9 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ##for k,v in input_xy_dict.items():
         ##    logging.debug('    {0} {1}'.format(k,v))
         
-        ## First calculate downstream cell for all cells
         logging.info('\nBuilding all subbasin points')
+        ## First calculate downstream cell for all cells
+        logging.debug('  Calculating downstream cells')
         out_cell_dict = dict()
         hru_type_in_dict = dict()
         cell_xy_dict = dict()
@@ -453,35 +477,40 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             cell_xy_dict[cell] = (int(row[5]), int(row[6]))
 
         ## Identify all active/lake cells that flow to inactive water cells
-        exit4_xy_list = sorted([
-            cell_xy for cell, cell_xy in cell_xy_dict.items()
-            if (cell not in input_xy_dict.keys() and
-                cell in hru_type_in_dict.keys() and
-                hru_type_in_dict[cell] in [1,2] and
-                hru_type_in_dict[out_cell_dict[cell]] == 4)])
-        ## Identify all active/lake cells that flow to inactive land cells
-        exit0_xy_list = sorted([
-            cell_xy for cell, cell_xy in cell_xy_dict.items()
-            if (cell not in input_xy_dict.keys() and
-                cell in hru_type_in_dict.keys() and
-                hru_type_in_dict[cell] in [1,2] and
-                hru_type_in_dict[out_cell_dict[cell]] == 0)])
-        ## DEADBEEF - Separate subbasin for active/lake cells that flow out of the grid?
-        ##exit_xy_list = sorted([
-        ##    cell_xy for cell, cell_xy in cell_xy_dict.items()
-        ##    if (cell not in input_xy_dict.keys() and
-        ##        cell in hru_type_in_dict.keys() and hru_type_in_dict[cell] in [1,2] and
-        ##        out_cell_dict[cell] not in hru_type_in_dict.keys())])
-        ## Create subbasin points for cells
-        fields = ["SHAPE@XY", subbasin_zone_field]
-        with arcpy.da.InsertCursor(subbasin_points_path, fields) as insert_c:
-            for out_cell_xy in exit4_xy_list:
-                insert_c.insertRow([out_cell_xy, subbasin_input_count+1])
-            for out_cell_xy in exit0_xy_list:
-                insert_c.insertRow([out_cell_xy, subbasin_input_count+2])
-                ##out_cell_xy, out_cell_i+subbasin_input_count+2])
-        del exit4_xy_list, exit0_xy_list, fields
+        if set_inactive_water_flag:
+            logging.debug('  Identifying cells that exit to inactive-water cells')
+            out_cell_xy_list = sorted([
+                cell_xy for cell, cell_xy in cell_xy_dict.items()
+                if (cell not in input_xy_dict.keys() and
+                    cell in hru_type_in_dict.keys() and
+                    hru_type_in_dict[cell] in [1,2] and
+                    hru_type_in_dict[out_cell_dict[cell]] == 4)])
+            fields = ["SHAPE@XY", subbasin_zone_field]
+            with arcpy.da.InsertCursor(subbasin_points_path, fields) as insert_c:
+                for out_cell_xy in out_cell_xy_list:
+                    insert_c.insertRow([out_cell_xy, subbasin_input_count+1])
+            del fields
+        else:
+            out_cell_xy_list = []
+
+        ## Flag subbasin points (outflow cells) in HRU poly
+        logging.info('  Flag outflow cells')
+        fields = [hru.type_in_field, hru.x_field, hru.y_field, hru.outflow_field]
+        with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
+            for row in u_cursor:
+                cell_xy = (row[1], row[2])
+                if int(row[0]) == 0:
+                    continue
+                elif input_xy_dict and cell_xy in input_xy_dict.values():
+                    row[3] = 1
+                elif out_cell_xy_list and cell_xy in out_cell_xy_list:
+                    row[3] = 1
+                else:
+                    row[3] = 0   
+                u_cursor.updateRow(row)
         del out_cell_dict, hru_type_in_dict, cell_xy_dict
+        del out_cell_xy_list
+
 
 
         ## Flow Accumulation
@@ -774,7 +803,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
 def flood_fill(test_array, four_way_flag=True, edge_flt=None):
     input_array = np.copy(test_array)
     input_rows, input_cols = input_array.shape
-    h_max = np.max(input_array * 2.0)
+    h_max = np.nanmax(input_array * 2.0)
     logging.debug("  Hmax: %s" % (h_max/2.0))
     
     ## Since ArcGIS doesn't ship with SciPy (only numpy), don't use ndimage module

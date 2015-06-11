@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW HRU parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-08
+# Created       2015-06-09
 # Python:       2.7
 #--------------------------------
 
@@ -74,7 +74,7 @@ def gsflow_hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             lake_area_pct = inputs_cfg.getfloat('INPUTS', 'lake_area_pct')
         try:
             set_inactive_water_flag = inputs_cfg.getboolean(
-                'INPUTS', 'set_inactive_waterflag')
+                'INPUTS', 'set_inactive_water_flag')
         except:
             logging.debug('  set_inactive_water_flag = False')
             set_inactive_water_flag = False
@@ -153,7 +153,7 @@ def gsflow_hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         study_area_path = os.path.join(hru_temp_ws, 'study_area.shp')
         lake_path = os.path.join(hru_temp_ws, 'lakes.shp')
         lake_clip_path = os.path.join(hru_temp_ws, 'lake_clip.shp')
-        inactive_water_orig_path = os.path.join(hru_temp_ws, 'inactive_water.shp')
+        inactive_water_path = os.path.join(hru_temp_ws, 'inactive_water.shp')
         inactive_water_clip_path = os.path.join(hru_temp_ws, 'inactive_water_clip.shp')
 
 
@@ -266,6 +266,7 @@ def gsflow_hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         add_field_func(hru.polygon_path, hru.iupseg_field, 'LONG')
         add_field_func(hru.polygon_path, hru.subbasin_field, 'LONG')
         add_field_func(hru.polygon_path, hru.segbasin_field, 'LONG')
+        add_field_func(hru.polygon_path, hru.outflow_field, 'LONG')
         add_field_func(hru.polygon_path, hru.strm_top_field, 'FLOAT')
         add_field_func(hru.polygon_path, hru.strm_slope_field, 'FLOAT')
 
