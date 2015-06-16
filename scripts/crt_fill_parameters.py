@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW CRT fill parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-09
+# Created       2015-06-16
 # Python:       2.7
 #--------------------------------
 
@@ -220,7 +220,7 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
         logging.info("Calculate {0} and {1}".format(hru.reach_field, hru.outseg_field))
         outseg_dict = dict()
         for iseg in iseg_list:
-            logging.debug("    Segment: {0}".format(iseg))
+            ##logging.debug("    Segment: {0}".format(iseg))
             ## Subset of cell_dict for current iseg
             iseg_dict = dict(
                 [(k,v) for k,v in cell_dict.items() if v[1] == iseg])
@@ -475,11 +475,15 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
 
         ## Write CRT values to hru_polygon
         logging.info("Writing CRT data to fishnet")
+        logging.debug('  {0:<4s} {1:<4s} {2:>7s}'.format('ROW', 'COLD', 'FILL'))
         fields = [hru.row_field, hru.col_field, hru.crt_dem_field, hru.crt_fill_field]
         with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
             for row in update_c:
                 row[2] = crt_dem_dict[int(row[0])][int(row[1])]
                 row[3] = crt_fill_dict[int(row[0])][int(row[1])]
+                if float(row[3]) > 0:
+                    logging.debug('  {0:>4d} {1:>4d} {2:>7.2f}'.format(
+                        row[0], row[1], float(row[3])))
                 update_c.updateRow(row)
 
     except:

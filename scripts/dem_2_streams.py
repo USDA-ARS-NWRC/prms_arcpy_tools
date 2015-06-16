@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW Flow Parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-09
+# Created       2015-06-16
 # Python:       2.7
 #--------------------------------
 
@@ -11,7 +11,6 @@ import argparse
 from collections import defaultdict
 import ConfigParser
 import datetime as dt
-import heapq
 import logging
 import os
 import re
@@ -311,18 +310,20 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             dem_sink8_obj = Con(
                 ~IsNull(Sink(flow_dir_obj)), (dem_fill_obj - dem_adj_obj))
             dem_sink8_obj.save(dem_sink8_path)
-            dem_sink8_array = raster_to_array(dem_sink8_path)[0]
+            dem_sink8_array = raster_path_to_array(
+                dem_sink8_path, return_nodata=False)
             if np.all(np.isnan(dem_sink8_array)):
                 logging.info('  No sinks (8-way)')
                 fill_flag = False
             else:
                 fill_flag = True
-            del dem_sink8_array, dem_sink8_obj, dem_adj_obj
+            del dem_sink8_array, dem_sink8_obj
         
         ## Sinks (4-way)
         if calc_sinks_4_way_flag:
             logging.info('Calculating sinks (4-way)')
-            dem_adj_array = raster_to_array(dem_adj_path)[0].astype(np.float)
+            dem_adj_array = raster_obj_to_array(
+                dem_adj_obj, return_nodata=False).astype(np.float)
             dem_sink4_array = flood_fill(dem_adj_array, True)
             dem_sink4_array -= dem_adj_array
             dem_sink4_array[dem_sink4_array == 0] = np.nan
@@ -336,6 +337,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             else:
                 fill_flag = True
             del dem_adj_array, dem_sink4_array, pnt
+        del dem_adj_obj
 
         ## Recaculate Flow Direction
         if fill_flag:
@@ -796,162 +798,6 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ##arcpy.ResetEnvironments()
         ##try: logging.info('\nTime elapsed = {0} seconds\n'.format(clock()-start))
         ##except: pass
-
-################################################################################
-
-#### Flood fill algorithm
-def flood_fill(test_array, four_way_flag=True, edge_flt=None):
-    input_array = np.copy(test_array)
-    input_rows, input_cols = input_array.shape
-    h_max = np.nanmax(input_array * 2.0)
-    logging.debug("  Hmax: %s" % (h_max/2.0))
-    
-    ## Since ArcGIS doesn't ship with SciPy (only numpy), don't use ndimage module
-    if four_way_flag:
-        el = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]]).astype(np.bool)
-    else:
-        el = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]).astype(np.bool)
-    ##if four_way_flag:
-    ##    el = ndimage.generate_binary_structure(2,1).astype(np.int)
-    ##else:
-    ##    el = ndimage.generate_binary_structure(2,2).astype(np.int)
-    
-    ## Build data/inside/edge masks
-    data_mask = ~np.isnan(input_array)
-    
-    ## Since ArcGIS doesn't ship with SciPy (only numpy), don't use ndimage module
-    inside_mask = np_binary_erosion(data_mask, structure=el)
-    ##inside_mask = ndimage.binary_erosion(data_mask, structure=el)
-
-    edge_mask = (data_mask & ~inside_mask)
-    ## Initialize output array as max value test_array except edges
-    output_array = np.copy(input_array)
-    output_array[inside_mask] = h_max
-    ## Set edge pixels less than edge_flt to edge_flt
-    if edge_flt:
-        output_array[edge_mask & (output_array<=edge_flt)]=edge_flt
-
-    ## Build priority queue and place edge pixels into queue
-    put = heapq.heappush
-    get = heapq.heappop
-    fill_heap = [
-        (output_array[t_row,t_col], int(t_row), int(t_col), 1)
-        for t_row, t_col in np.transpose(np.where(edge_mask))]
-    heapq.heapify(fill_heap)
-    ##logging.info("    Queue Size: %s" % len(fill_heap))
-
-    ## Cleanup
-    del data_mask, edge_mask, el
-    ##logging.info("    Prep Time: %s" % (clock()-start_total))
-
-    while True:
-        try:
-            h_crt, t_row, t_col, edge_flag = get(fill_heap)
-        except IndexError:
-            break
-        for n_row, n_col in [
-            ((t_row-1),t_col), ((t_row+1),t_col),
-            (t_row,(t_col-1)), (t_row,(t_col+1))]:
-            ## Skip cell if outside array edges
-            if edge_flag:
-                try:
-                    if not inside_mask[n_row, n_col]:
-                        continue
-                except IndexError:
-                    continue
-            if output_array[n_row, n_col]==h_max:
-                output_array[n_row, n_col] = max(
-                    h_crt, input_array[n_row, n_col])
-                put(fill_heap,
-                    (output_array[n_row, n_col], n_row, n_col, 0))
-    return output_array
-
-def np_binary_erosion(input_array, structure=np.ones((3,3)).astype(np.bool)):
-    """NumPy binary erosion function 
-
-    No error checking on input array (type)
-    No error checking on structure element (# of dimensions, shape, type, etc.)
-
-    Args:
-        input_array: Binary NumPy array to be eroded. Non-zero (True) elements
-            form the subset to be eroded
-        structure: Structuring element used for the erosion. Non-zero elements
-            are considered True. If no structuring element is provided, an
-            element is generated with a square connectivity equal to one.
-    Returns:
-        binary_erosion: Erosion of the input by the stucturing element
-    """
-    rows, cols = input_array.shape
-    
-    ## Pad output array (binary_erosion) with extra cells around the edge
-    ## so that structuring element will fit without wrapping.
-    ## A 3x3 structure, will need 1 additional cell around the edge
-    ## A 5x5 structure, will need 2 additional cells around the edge
-    output_shape = tuple(
-        ss + dd - 1 for ss,dd in zip(input_array.shape, structure.shape))
-    input_pad_array = np.zeros(output_shape).astype(np.bool)
-    input_pad_array[1:rows+1,1:cols+1] = input_array
-    binary_erosion = np.zeros(output_shape).astype(np.bool)
-
-    ## Cast structure element to boolean
-    struc_mask = structure.astype(np.bool)
-
-    ## Iterate over each cell
-    for row in xrange(rows):
-        for col in xrange(cols):
-            ## The value of the output pixel is the minimum value of all the
-            ##   pixels in the input pixel's neighborhood.
-            binary_erosion[row+1,col+1] = np.min(
-                input_pad_array[row:row+3, col:col+3][struc_mask])
-    return binary_erosion[1:rows+1,1:cols+1]
-
-def raster_to_array(input_item, mask_extent=None):
-    ## input_item can be a raster_obj or raster_path
-    try: input_obj = Raster(input_item)
-    except TypeError: input_obj = input_item
-    input_nodata = input_obj.noDataValue
-    input_cs = input_obj.meanCellHeight
-    input_rows, input_cols = input_obj.height, input_obj.width
-    input_extent = input_obj.extent
-    if mask_extent:
-        int_extent = get_extent_intersection([input_extent, mask_extent])
-        int_pnt = arcpy.Point()
-        int_pnt.X = int_extent.XMin
-        int_pnt.Y = int_extent.YMin
-        int_rows, int_cols = extent_shape(int_extent, input_cs)
-        output_array = arcpy.RasterToNumPyArray(
-            input_obj, int_pnt, int_cols, int_rows)
-    else:
-        output_array = arcpy.RasterToNumPyArray(input_obj)
-    ## Integer type raster can't have NaN values, will only set floats to NaN
-    if (output_array.dtype == np.float32 or
-        output_array.dtype == np.float64):        
-        output_array[output_array == input_nodata] = np.NaN
-        output_nodata = np.NaN
-    else:
-        output_nodata = int(input_nodata)
-    return output_array, output_nodata
-
-def array_to_raster(input_array, output_path, pnt, cs, mask_array=None):
-    output_array = np.copy(input_array)
-    ## Float arrays have to have nodata set to some value (-9999)
-    if (output_array.dtype == np.float32 or
-        output_array.dtype == np.float64):
-        output_nodata = -9999
-        output_array[np.isnan(output_array)] = output_nodata
-    ## Boolean arrays need to be converted unsigned ints
-    elif output_array.dtype == np.bool:
-        output_array = output_array.astype(np.uint8)
-        output_nodata = 255
-    ## If a mask array is give, assume all 0 values are nodata
-    if np.any(mask_array): output_array[mask_array == 0] = output_nodata
-    output_obj = arcpy.NumPyArrayToRaster(
-        output_array, pnt, cs, cs, output_nodata)
-    output_obj.save(output_path)
-    del output_obj
-    arcpy.DefineProjection_management(
-        output_path, env.outputCoordinateSystem)
-    arcpy.CalculateStatistics_management(output_path)
 
 ################################################################################
 
