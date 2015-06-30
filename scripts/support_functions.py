@@ -14,6 +14,7 @@ import logging
 import math
 import os
 import re
+import sys
 from time import sleep
 
 import numpy as np
@@ -48,7 +49,11 @@ class hru_parameters():
         logging.debug('  {}'.format(os.path.basename(config_path)))
         
         ## Open field list config file
-        field_list_path =  inputs_cfg.get('INPUTS', 'field_list_path')
+        ## Use script directory (from sys.argv[0]) in case script is a
+        ##   relative path (i.e. called from a project folder)
+        field_list_path =  os.path.join(
+            os.path.dirname(sys.argv[0]), 'field_list.ini')
+        ###field_list_path =  inputs_cfg.get('INPUTS', 'field_list_path')
         fields_cfg = ConfigParser.ConfigParser()
         try:
             fields_cfg.readfp(open(field_list_path))
