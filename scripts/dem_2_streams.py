@@ -485,7 +485,7 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 cell_xy for cell, cell_xy in cell_xy_dict.items()
                 if (cell not in input_xy_dict.keys() and
                     cell in hru_type_in_dict.keys() and
-                    hru_type_in_dict[cell] in [1,2] and
+                    hru_type_in_dict[cell] in [1,2,3] and
                     hru_type_in_dict[out_cell_dict[cell]] == 4)])
             fields = ["SHAPE@XY", subbasin_zone_field]
             with arcpy.da.InsertCursor(subbasin_points_path, fields) as insert_c:
@@ -495,8 +495,10 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         else:
             out_cell_xy_list = []
 
-        ## Flag subbasin points (outflow cells) in HRU poly
+        ## Flag outflow cells (subbasin points?) in HRU poly
         logging.info('  Flag outflow cells')
+        logging.debug('    Set HRU_TYPE_IN = 1 for stream inactive-water exit cells')
+        logging.debug('    Set HRU_TYPE_IN = 3 for non-stream inactive-water exit cells')
         fields = [hru.type_in_field, hru.x_field, hru.y_field, hru.outflow_field]
         with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
             for row in u_cursor:
@@ -504,8 +506,10 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 if int(row[0]) == 0:
                     continue
                 elif input_xy_dict and cell_xy in input_xy_dict.values():
+                    row[0] = 1
                     row[3] = 1
                 elif out_cell_xy_list and cell_xy in out_cell_xy_list:
+                    row[0] = 3
                     row[3] = 1
                 else:
                     row[3] = 0   
@@ -629,8 +633,10 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
 
         ## Reset HRU_TYPE to 0 for inactive water cells
-        logging.info('Clearing inactive water HRU_TYPE')
+        logging.info('Clearing inactive water cells (HRU_TYPE 4)')
         hru_type_obj = Con((hru_type_in_obj == 4), 0, hru_type_in_obj)
+        logging.info('Clearing edge cells (HRU_TYPE 3)')
+        hru_type_obj = Con((hru_type_obj == 3), 1, hru_type_obj)
         hru_type_obj.save(hru_type_path)
         del hru_type_obj
         del hru_type_in_obj

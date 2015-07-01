@@ -251,7 +251,9 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
             hru.krch_field, hru.irch_field, hru.jrch_field]
         with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
             for row in update_c:
-                if (int(row[0]) == 1 and int(row[1]) > 0):
+                if (int(row[0]) == 1 or int(row[0]) == 3) and int(row[1]) > 0:
+                ##DEADBEEF
+                ##if (int(row[0]) == 1 and int(row[1]) > 0):
                     row[4], row[5], row[6] = 1, int(row[2]), int(row[3])
                 else:
                     row[4], row[5], row[6] = 0, 0, 0
@@ -300,7 +302,11 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
             ## Skip inactive cells
             if int(row[0]) == 0:
                 continue
-            ## Skip non-lake and non-stream cells
+            ## Skip edge cells
+            ## DEADBEEF
+            elif int(row[0]) == 3:
+                continue
+            ## Skip if not lake and not stream
             elif (int(row[1]) == 0 and int(row[2]) == 0):
                 continue
             ## Read in parameters
