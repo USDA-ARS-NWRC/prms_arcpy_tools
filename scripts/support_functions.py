@@ -75,7 +75,7 @@ class hru_parameters():
         self.polygon_path = inputs_cfg.get('INPUTS', 'hru_fishnet_path')
         self.point_path   = inputs_cfg.get('INPUTS', 'hru_centroid_path')
         self.sr_name = inputs_cfg.get('INPUTS', 'hru_projection')
-        self.cs      = inputs_cfg.getint('INPUTS', 'hru_cellsize')
+        self.cs      = inputs_cfg.getfloat('INPUTS', 'hru_cellsize')
         self.ref_x   = inputs_cfg.getfloat('INPUTS', 'hru_ref_x')
         self.ref_y   = inputs_cfg.getfloat('INPUTS', 'hru_ref_y')
         self.ref_pnt = arcpy.Point(self.ref_x, self.ref_y)
