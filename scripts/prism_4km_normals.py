@@ -43,7 +43,7 @@ def prism_km_parameters(config_path, data_name='ALL',
 
     try:
         ## Initialize hru_parameters class
-        hru = hru_parameters(config_path)
+        hru = HRUParameters(config_path)
 
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()

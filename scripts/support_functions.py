@@ -27,7 +27,7 @@ from support_functions import *
 
 ################################################################################
 
-class hru_parameters():
+class HRUParameters():
     def __init__(self, config_path):
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()

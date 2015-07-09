@@ -43,7 +43,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         logging.info('\nGSFLOW Flow Parameters')
 
         ## Initialize hru_parameters class
-        hru = hru_parameters(config_path)
+        hru = HRUParameters(config_path)
 
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()

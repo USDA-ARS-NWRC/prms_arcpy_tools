@@ -39,7 +39,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     try:
         ## Initialize hru_parameters class
-        hru = hru_parameters(config_path)
+        hru = HRUParameters(config_path)
 
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()
