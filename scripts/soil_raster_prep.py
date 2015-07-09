@@ -26,7 +26,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
+def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
     """Prepare GSFLOW soil rasters
 
     Args:
@@ -363,6 +363,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Prepare GSFLOW Soil Rasters
-    gsflow_soil_raster_prep(
+    soil_raster_prep(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

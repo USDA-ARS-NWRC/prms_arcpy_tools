@@ -29,7 +29,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=False):
+def crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=False):
     """Calculate GSFLOW CRT Fill Parameters
 
     Args:
@@ -550,6 +550,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate CRT Fill Parameters
-    gsflow_crt_fill_parameters(
+    crt_fill_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

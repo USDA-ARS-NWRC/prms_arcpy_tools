@@ -25,7 +25,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_fishnet_func(config_path, overwrite_flag=False, debug_flag=False):
+def fishnet_func(config_path, overwrite_flag=False, debug_flag=False):
     """GSFLOW Fishnet Generator
 
     Args:
@@ -224,6 +224,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Run GSFLOW Fishnet Generator
-    gsflow_fishnet_func(
+    fishnet_func(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

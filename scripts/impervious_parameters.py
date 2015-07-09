@@ -25,7 +25,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
+def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
     """Calculate GSFLOW Impervious Parameters
 
     Args:
@@ -207,6 +207,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW Impervious Parameters
-    gsflow_impervious_parameters(
+    impervious_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

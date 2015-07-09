@@ -26,7 +26,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_thickness_parameters(config_path, overwrite_flag=False, debug_flag=False):
+def thickness_parameters(config_path, overwrite_flag=False, debug_flag=False):
     """Calculate GSFLOW Thickness Parameters
 
     Args:
@@ -176,6 +176,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW Thickness Parameters
-    gsflow_thickness_parameters(
+    thickness_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

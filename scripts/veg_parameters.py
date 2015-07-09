@@ -24,7 +24,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
+def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     """Calculate GSFLOW Vegetation Parameters
 
     Args:
@@ -458,6 +458,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW Vegetation Parameters
-    gsflow_veg_parameters(
+    veg_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

@@ -26,7 +26,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
+def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     """Calculate GSFLOW Soil Parameters
 
     Args:
@@ -469,6 +469,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW Soil Parameters
-    gsflow_soil_parameters(
+    soil_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

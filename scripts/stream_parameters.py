@@ -29,7 +29,7 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
+def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     """Calculate GSFLOW Stream Parameters
 
     Args:
@@ -709,6 +709,6 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW Stream Parameters
-    gsflow_stream_parameters(
+    stream_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

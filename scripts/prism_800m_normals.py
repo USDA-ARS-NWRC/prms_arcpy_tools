@@ -28,8 +28,8 @@ from support_functions import *
 
 ################################################################################
 
-def gsflow_prism_parameters(config_path, data_name='ALL', 
-                            overwrite_flag=False, debug_flag=False, ):
+def prism_800m_parameters(config_path, data_name='ALL', 
+                          overwrite_flag=False, debug_flag=False, ):
     """Calculate GSFLOW PRISM Parameters
 
     Args:
@@ -278,7 +278,7 @@ if __name__ == '__main__':
         args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW PRISM Parameters
-    gsflow_prism_parameters(
+    prism_800m_parameters(
         config_path=args.ini, data_name=args.type, 
         overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
