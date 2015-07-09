@@ -79,7 +79,8 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.debug('  set_inactive_water_flag = False')
             set_inactive_water_flag = False
         if set_inactive_water_flag:
-            inactive_water_orig_path = inputs_cfg.get('INPUTS', 'inactive_water_path')
+            inactive_water_orig_path = inputs_cfg.get(
+                'INPUTS', 'inactive_water_path')
 
         ## Control flags
         calc_flow_acc_dem_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_dem_flag')
@@ -392,7 +393,8 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.info('Resetting {0} to 0'.format(hru.lake_id_field))
             arcpy.CalculateField_management(
                 hru.polygon_path, hru.lake_id_field, 0, 'PYTHON')
-        if set_lake_flag or set_inactive_water_flag:
+        if set_lake_flag:
+        ##if set_lake_flag or set_inactive_water_flag:
             logging.info('Resetting {0} to 0'.format(hru.lake_area_field))
             arcpy.CalculateField_management(
                 hru.polygon_path, hru.lake_area_field, 0, 'PYTHON')
@@ -434,6 +436,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.debug('  Lakes: {0}'.format(lake_orig_path))
             logging.debug('  Lakes spat. ref.:  {0}'.format(lake_sr.name))
             logging.debug('  Lakes GCS:         {0}'.format(lake_sr.GCS.name))
+            
             ## If lakes spat_ref doesn't match hru_param spat_ref
             ## Project lakes to hru_param spat ref
             ## Otherwise, read lakes directly       
@@ -450,6 +453,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             else:
                 arcpy.MakeFeatureLayer_management(
                     lake_orig_path, lake_layer)
+                
             ## Clip lakes by study area after projecting lakes
             logging.info('  Clipping lakes...')
             arcpy.Clip_analysis(lake_layer, study_area_path, lake_clip_path)
@@ -458,6 +462,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 if field.name not in [lake_zone_field, 'Shape']:
                     try: arcpy.DeleteField_management(lake_clip_path, field.name)
                     except: pass
+                    
             ## Set lake HRU_TYPE
             logging.info('  Setting lake {0}'.format(hru.type_in_field))
             zone_by_area_func(
@@ -484,6 +489,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.debug('  Inactive water: {0}'.format(inactive_water_orig_path))
             logging.debug('  Inactive water spat. ref.:  {0}'.format(inactive_water_sr.name))
             logging.debug('  Inactive water GCS:         {0}'.format(inactive_water_sr.GCS.name))
+            
             ## If inactive water spat_ref doesn't match hru_param spat_ref
             ## Project inactive water to hru_param spat ref
             ## Otherwise, read inactive water directly       
@@ -496,11 +502,15 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 arcpy.Project_management(
                     inactive_water_orig_path, inactive_water_path,
                     hru.sr, transform_str, inactive_water_sr)
-                arcpy.MakeFeatureLayer_management(inactive_water_path, inactive_water_layer)
-                del inactive_water_path, transform_str
+                ##arcpy.MakeFeatureLayer_management(
+                ##    inactive_water_path, inactive_water_layer)
+                del transform_str
             else:
-                arcpy.MakeFeatureLayer_management(
-                    inactive_water_orig_path, inactive_water_layer)
+                arcpy.Copy_management(
+                    inactive_water_orig_path, inactive_water_path)
+                ##arcpy.MakeFeatureLayer_management(
+                ##    inactive_water_orig_path, inactive_water_layer)
+                
             ## Clip inactive water by study area after projecting inactive water
             ##logging.info('  Clipping inactive water...')
             ##arcpy.Clip_analysis(
@@ -510,13 +520,14 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             ##    if field.name not in [inactive_water_zone_field, 'Shape']:
             ##        try: arcpy.DeleteField_management(inactive_water_clip_path, field.name)
             ##        except: pass
+                
             ## Set inactive water HRU_TYPE
             logging.info('  Setting inactive water {0}'.format(hru.type_in_field))
             zone_by_centroid_func(
-                inactive_water_layer, hru.type_in_field, 4, 
+                inactive_water_path, hru.type_in_field, 4, 
                 hru.polygon_path, hru.point_path, hru)
             ##zone_by_area_func(
-            ##    inactive_water_layer, hru.type_in_field, 4, 
+            ##    inactive_water_path, hru.type_in_field, 4, 
             ##    hru.polygon_path, hru, hru.area_field,
             ##    hru.lake_area_field, 50)
             ## Cleanup
