@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW CRT fill parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-30
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -55,7 +55,7 @@ def gsflow_crt_fill_parameters(config_path, overwrite_flag=False, debug_flag=Fal
             raise SystemExit()
 
         ## Log DEBUG to file
-        log_file_name = 'gsflow_streams_log.txt'
+        log_file_name = 'crt_fill_parameters_log.txt'
         log_console = logging.FileHandler(
             filename=os.path.join(hru.log_ws, log_file_name), mode='w')
         log_console.setLevel(logging.DEBUG)
@@ -537,14 +537,6 @@ if __name__ == '__main__':
     ## Create Basic Logger
     logging.basicConfig(level=args.loglevel, format='%(message)s')
 
-    #### Get GSFLOW config file
-    ##ini_re = re.compile('\w*.ini$', re.I)
-    ##try:
-    ##    ini_path = sys.argv[1]
-    ##except IndexError:
-    ##    ini_path = get_ini_file(workspace, ini_re, 'gsflow_dem_parameters')
-    ##del ini_re
-
     ## Run Information
     logging.info('\n{0}'.format('#'*80))
     log_f = '{0:<20s} {1}'
@@ -552,6 +544,10 @@ if __name__ == '__main__':
         'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
+
+    ## Convert input file to an absolute path
+    if os.path.isfile(os.path.abspath(args.ini)):
+        args.ini = os.path.abspath(args.ini)
 
     ## Calculate CRT Fill Parameters
     gsflow_crt_fill_parameters(

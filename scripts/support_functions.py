@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW parameter support functions
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-08
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -390,7 +390,7 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         logging.error(
             '\nERROR: HRU centroids does not appear to be projected (or does not have a prj file)'+
             '\nERROR: Try deleting the centroids (i.e. "_label.shp") and '+
-            'rerunning gsflow_hru_parameters.py\n')
+            'rerunning hru_parameters.py\n')
         raise SystemExit()
 
     ## Check that ORIG_FID is in point_path (HRU centroids)
@@ -398,7 +398,7 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         logging.error(
             ('\nERROR: HRU centroids does not have the field: {0}'+
              '\nERROR: Try deleting the centroids (i.e. "_label.shp") and '+
-             'rerunning gsflow_hru_parameters.py\n').format(hru_param.fid_field))
+             'rerunning hru_parameters.py\n').format(hru_param.fid_field))
         raise SystemExit()
     ## Check for duplicate ORIG_FID values
     fid_list = [r[0] for r in arcpy.da.SearchCursor(point_path, [hru_param.fid_field])]

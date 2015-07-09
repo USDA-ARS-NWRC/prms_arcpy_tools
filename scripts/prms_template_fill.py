@@ -3,7 +3,7 @@
 # Purpose:      Fill PRMS Parameter File Template
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-08
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -104,28 +104,28 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 ('\nERROR: Cascades folder does not exist'+
                  '\nERROR:   {0}'+
-                 '\nERROR: Try re-running gsflow_stream_parameters.py\n').format(
+                 '\nERROR: Try re-running CRT using stream_parameters.py\n').format(
                      crt_ws))
             raise SystemExit()
         if not os.path.isfile(crt_dimension_path): 
             logging.error(
                 ('\nERROR: Cascades dimension file does not exist'+
                  '\nERROR:   {0}'+
-                 '\nERROR: Try re-running gsflow_stream_parameters.py\n').format(
+                 '\nERROR: Try re-running CRT using stream_parameters\n').format(
                      crt_dimension_path))
             raise SystemExit()
         if not os.path.isfile(crt_parameter_path): 
             logging.error(
                 ('\nERROR: Cascades parameter file does not exist'+
                  '\nERROR:   {0}'+
-                 '\nERROR: Try re-running gsflow_stream_parameters.py & CRT\n').format(
+                 '\nERROR: Try re-running CRT using stream_parameters\n').format(
                      crt_parameter_path))
             raise SystemExit()
         if not os.path.isfile(crt_gw_parameter_path): 
             logging.error(
                 ('\nERROR: Groundwater cascades parameter file does not exist'+
                  '\nERROR:   {0}'+
-                 '\nERROR: Try re-running gsflow_stream_parameters.py & CRT\n').format(
+                 '\nERROR: Try re-running CRT using stream_parameters\n').format(
                      crt_gw_parameter_path))
             raise SystemExit()
 
@@ -759,14 +759,6 @@ if __name__ == '__main__':
     ## Create Basic Logger
     logging.basicConfig(level=args.loglevel, format='%(message)s')
 
-    #### Get PRMS config file
-    ##ini_re = re.compile('\w*.ini$', re.I)
-    ##try: 
-    ##    ini_path = sys.argv[1]
-    ##except IndexError:
-    ##    ini_path = get_ini_file(workspace, ini_re, 'prms_template_fill')
-    ##del ini_re
-
     ## Run Information
     logging.info('\n{0}'.format('#'*80))
     log_f = '{0:<20s} {1}'
@@ -774,6 +766,10 @@ if __name__ == '__main__':
         'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
+
+    ## Convert input file to an absolute path
+    if os.path.isfile(os.path.abspath(args.ini)):
+        args.ini = os.path.abspath(args.ini)
 
     ## Fill PRMS Parameter Template File
     prms_template_fill(

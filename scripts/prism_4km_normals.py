@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW PRISM parameters from default 400m normals 
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-08
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -56,7 +56,7 @@ def gsflow_prism_parameters(config_path, data_name='ALL',
             raise SystemExit()
 
         ## Log DEBUG to file
-        log_file_name = 'gsflow_prism_normals_log.txt'
+        log_file_name = 'prism_4km_normals_log.txt'
         log_console = logging.FileHandler(
             filename=os.path.join(hru.log_ws, log_file_name), mode='w')
         log_console.setLevel(logging.DEBUG)
@@ -265,22 +265,6 @@ if __name__ == '__main__':
     ## Create Basic Logger
     logging.basicConfig(level=args.loglevel, format='%(message)s')
 
-    #### Get GSFLOW config file
-    ##ini_re = re.compile('\w*.ini$', re.I)
-    ##try: 
-    ##    ini_path = sys.argv[1]
-    ##except IndexError:
-    ##    ini_path = get_ini_file(workspace, ini_re, 'gsflow_prism_parameters')
-    ##del ini_re
-
-    ## Get PRISM data name as argument only if a config file was also set
-    ##try: 
-    ##    data_name = sys.argv[2]
-    ##except IndexError:
-    ##    data_name = get_prism_data_name()
-    ##if data_name not in ['PPT', 'TMAX', 'TMIN']:
-    ##    data_name = 'ALL'
-
     ## Run Information
     logging.info('\n{0}'.format('#'*80))
     log_f = '{0:<20s} {1}'
@@ -288,6 +272,10 @@ if __name__ == '__main__':
         'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
+
+    ## Convert input file to an absolute path
+    if os.path.isfile(os.path.abspath(args.ini)):
+        args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW PRISM Parameters
     gsflow_prism_parameters(

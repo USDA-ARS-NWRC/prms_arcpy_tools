@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW soil raster prep
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-04-27
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -52,7 +52,7 @@ def gsflow_soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False)
             raise SystemExit()
 
         ## Log DEBUG to file
-        log_file_name = 'gsflow_soil_log.txt'
+        log_file_name = 'soil_prep_log.txt'
         log_console = logging.FileHandler(
             filename=os.path.join(hru.log_ws, log_file_name), mode='w')
         log_console.setLevel(logging.DEBUG)
@@ -150,7 +150,7 @@ def gsflow_soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False)
         ##if not arcpy.Exists(root_depth_path):
         ##    logging.error(
         ##        '\nERROR: Root depth raster does not exists'+
-        ##        '\nERROR: Try re-running gsflow_veg_parameters script\n')
+        ##        '\nERROR: Try re-running veg_parameters script\n')
         ##    raise SystemExit()
 
 		
@@ -350,14 +350,6 @@ if __name__ == '__main__':
     ## Create Basic Logger
     logging.basicConfig(level=args.loglevel, format='%(message)s')
 
-    #### Get GSFLOW config file
-    ##ini_re = re.compile('\w*.ini$', re.I)
-    ##try: 
-    ##    ini_path = sys.argv[1]
-    ##except IndexError:
-    ##    ini_path = get_ini_file(workspace, ini_re, 'gsflow_soil_parameters')
-    ##del ini_re
-
     ## Run Information
     logging.info('\n{0}'.format('#'*80))
     log_f = '{0:<20s} {1}'
@@ -365,6 +357,10 @@ if __name__ == '__main__':
         'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
+
+    ## Convert input file to an absolute path
+    if os.path.isfile(os.path.abspath(args.ini)):
+        args.ini = os.path.abspath(args.ini)
 
     ## Prepare GSFLOW Soil Rasters
     gsflow_soil_raster_prep(

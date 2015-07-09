@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW DEM parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-04-27
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -52,7 +52,7 @@ def gsflow_dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         logging.debug('\nReading Input File')
 
         ## Log DEBUG to file
-        log_file_name = 'gsflow_dem_log.txt'
+        log_file_name = 'dem_parameters_log.txt'
         log_console = logging.FileHandler(
             filename=os.path.join(hru.log_ws, log_file_name), mode='w')
         log_console.setLevel(logging.DEBUG)
@@ -592,14 +592,6 @@ if __name__ == '__main__':
 
     ## Create Basic Logger
     logging.basicConfig(level=args.loglevel, format='%(message)s')
-
-    #### Get GSFLOW config file
-    ##ini_re = re.compile('\w*.ini$', re.I)
-    ##try: 
-    ##    ini_path = sys.argv[1]
-    ##except IndexError:
-    ##    ini_path = get_ini_file(workspace, ini_re, 'gsflow_dem_parameters')
-    ##del ini_re
 
     ## Run Information
     logging.info('\n{0}'.format('#'*80))

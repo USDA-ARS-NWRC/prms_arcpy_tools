@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW stream parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-08
+# Created       2015-07-09
 # Python:       2.7
 #--------------------------------
 
@@ -55,7 +55,7 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
             raise SystemExit()
 
         ## Log DEBUG to file
-        log_file_name = 'gsflow_streams_log.txt'
+        log_file_name = 'stream_parameters_log.txt'
         log_console = logging.FileHandler(
             filename=os.path.join(hru.log_ws, log_file_name), mode='w')
         log_console.setLevel(logging.DEBUG)
@@ -231,7 +231,7 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
         add_field_func(hru.polygon_path, hru.strm_top_field, 'FLOAT')
         add_field_func(hru.polygon_path, hru.strm_slope_field, 'FLOAT')
 
-        ## Check watershed and stream values from gsflow_dem_2_stream.py
+        ## Check watershed and stream values from dem_2_stream.py
         ## Lakes must be negative of LAKE_ID, not LAKE_ID + OFFSET
         ##logging.info("\nChecking watershed & stream values")
         ##fields = [hru.irunbound_field, hru.iseg_field]
@@ -696,14 +696,6 @@ if __name__ == '__main__':
     ## Create Basic Logger
     logging.basicConfig(level=args.loglevel, format='%(message)s')
 
-    ## Get GSFLOW config file
-    ##ini_re = re.compile('\w*.ini$', re.I)
-    ##try: 
-    ##    ini_path = sys.argv[1]
-    ##except IndexError:
-    ##    ini_path = get_ini_file(workspace, ini_re, 'gsflow_dem_parameters')
-    ##del ini_re
-
     ## Run Information
     logging.info('\n{0}'.format('#'*80))
     log_f = '{0:<20s} {1}'
@@ -711,6 +703,10 @@ if __name__ == '__main__':
         'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
+
+    ## Convert input file to an absolute path
+    if os.path.isfile(os.path.abspath(args.ini)):
+        args.ini = os.path.abspath(args.ini)
 
     ## Calculate GSFLOW Stream Parameters
     gsflow_stream_parameters(
