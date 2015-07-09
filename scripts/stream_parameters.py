@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW stream parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-30
+# Created       2015-07-08
 # Python:       2.7
 #--------------------------------
 
@@ -335,24 +335,27 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
             out_cells = [value[2] for value in iseg_dict.values()]
             ## Every iseg will (should?) have one out_cell
             out_cell = list(set(out_cells)-set(iseg_cells))
-            ## If there is more than one out_cell
-            ##   there is a problem with the stream network
-            if len(out_cell) <> 1:
-                logging.error(
-                    ('\nERROR: ISEG {0} has more than one out put cell'+
-                     '\n  Out cells: {1}'+
-                     '\n  Check for streams exiting then re-entering a lake'+
-                     '\n  Lake cell elevations may not be constant\n').format(
-                         iseg, out_cell))
-                raise SystemExit()
-            ## If not output cell, assume edge of domain
-            try:
-                outseg = cell_dict[out_cell[0]][1]
-            except KeyError:
-                outseg = exit_seg
-            ## Track sub-basin outseg
-            outseg_dict[iseg] = outseg
-            if iseg > 0: 
+
+            ## Process streams and lakes separately
+            if iseg > 0:
+                ## If there is more than one out_cell
+                ##   there is a problem with the stream network
+                if len(out_cell) <> 1:
+                    logging.error(
+                        ('\nERROR: ISEG {0} has more than one out put cell'+
+                         '\n  Out cells: {1}'+
+                         '\n  Check for streams exiting then re-entering a lake'+
+                         '\n  Lake cell elevations may not be constant\n').format(
+                             iseg, out_cell))
+                    raise SystemExit()
+                ## If not output cell, assume edge of domain
+                try:
+                    outseg = cell_dict[out_cell[0]][1]
+                except KeyError:
+                    outseg = exit_seg
+                
+                ## Track sub-basin outseg
+                outseg_dict[iseg] = outseg
                 ## Calculate reach number for each cell
                 reach_dict = dict()
                 start_cell = list(set(iseg_cells)-set(out_cells))[0]
@@ -364,14 +367,38 @@ def gsflow_stream_parameters(config_path, overwrite_flag=False, debug_flag=False
                 for iseg_cell in iseg_cells:
                     cell_dict[iseg_cell][4:] = [
                         outseg, reach_dict[iseg_cell], len(iseg_cells)]
-                del reach_dict, start_cell
-            else:
+                del reach_dict, start_cell, outseg
+            elif iseg < 0:
+                ## For lake cells, there can be multiple outlets if all of them
+                ##   are to inactive cells or out of the model
+                ## Otherwise, like streams, there should only be one outcell per iseg
+                if len(out_cell) == 1:
+                    try:
+                        outseg = cell_dict[out_cell[0]][1]
+                    except KeyError:
+                        outseg = exit_seg
+                elif (len(out_cell) <> 1 and
+                      all(x[0] not in cell_dict.keys() for x in out_cell)):
+                    outseg = exit_seg
+                    logging.debug(
+                        ('  All out cells are inactive, setting outseg '+
+                         'to exit_seg {}').format(exit_seg))
+                else:
+                    logging.error(
+                        ('\nERROR: ISEG {0} has more than one out put cell'+
+                         '\n  Out cells: {1}'+
+                         '\n  Check for streams exiting then re-entering a lake'+
+                         '\n  Lake cell elevations may not be constant\n').format(
+                             iseg, out_cell))
+                ## Track sub-basin outseg
+                outseg_dict[iseg] = outseg
                 ## For each lake segment cell, only save outseg
                 ## All lake cells are routed directly to the outseg
                 for iseg_cell in iseg_cells:
                     cell_dict[iseg_cell][4:] = [outseg, 0, 0]
+                del outseg
             del iseg_dict, iseg_cells, iseg
-            del out_cells, out_cell, outseg
+            del out_cells, out_cell
 
         ## Calculate stream elevation
         logging.info("Stream elevation (DEM_ADJ - 1 for now)")

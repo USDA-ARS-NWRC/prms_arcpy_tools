@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW parameter support functions
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-30
+# Created       2015-07-08
 # Python:       2.7
 #--------------------------------
 
@@ -794,7 +794,8 @@ def zone_by_area_func(
                 hru_cell_dict[int(row[0])] = [float(row[3]), float(row[2])]
     ## Set value of selected HRU cells
     fields = [hru_param.fid_field, zone_field]
-    if zone_area_field: fields.append(zone_area_field)
+    if zone_area_field:
+        fields.append(zone_area_field)
     with arcpy.da.UpdateCursor(hru_param_path, fields) as u_cursor:
         for row in u_cursor:
             ## Remove items to speed up subsequent searches

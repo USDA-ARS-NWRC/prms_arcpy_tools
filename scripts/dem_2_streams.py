@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW Flow Parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-06-16
+# Created       2015-07-08
 # Python:       2.7
 #--------------------------------
 
@@ -304,6 +304,11 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         dem_fill_obj = Fill(dem_adj_obj)
         dem_fill_obj.save(dem_fill_path)
 
+        ## Need to determine if cells were filled so that flow direction
+        ##   can be be recomputed
+        ## Initially assume no cells were filled
+        fill_flag = False
+
         ## Sinks (8-way)
         if calc_sinks_8_way_flag:
             logging.info('Calculating sinks (8-way)')
@@ -314,7 +319,6 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 dem_sink8_path, return_nodata=False)
             if np.all(np.isnan(dem_sink8_array)):
                 logging.info('  No sinks (8-way)')
-                fill_flag = False
             else:
                 fill_flag = True
             del dem_sink8_array, dem_sink8_obj
@@ -333,9 +337,10 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             array_to_raster(dem_sink4_array, dem_sink4_path, pnt, hru.cs)
             if np.all(np.isnan(dem_sink4_array)):
                 logging.info('  No sinks (4-way)')
-                fill_flag = False
-            else:
-                fill_flag = True
+            ## Don't set fill_flag here since ArcGIS fill function
+            ##   doesn't fill 4-way sinks
+            ##else:
+            ##    fill_flag = True
             del dem_adj_array, dem_sink4_array, pnt
         del dem_adj_obj
 
@@ -486,6 +491,8 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 if (cell not in input_xy_dict.keys() and
                     cell in hru_type_in_dict.keys() and
                     hru_type_in_dict[cell] in [1,2,3] and
+                    cell in out_cell_dict.keys() and 
+                    out_cell_dict[cell] in hru_type_in_dict.keys() and 
                     hru_type_in_dict[out_cell_dict[cell]] == 4)])
             fields = ["SHAPE@XY", subbasin_zone_field]
             with arcpy.da.InsertCursor(subbasin_points_path, fields) as insert_c:
@@ -736,39 +743,42 @@ def gsflow_flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
 
         ## Write sink values to hru_polygon
-        logging.info('\nExtracting sink values')
-        mem_point_path = os.path.join('in_memory', 'hru_point')
-        arcpy.CopyFeatures_management(hru.point_path, mem_point_path)
-        vt_list = [
-            [dem_sink8_path, hru.dem_sink8_field],
-            [dem_sink4_path, hru.dem_sink4_field]]
-        ExtractMultiValuesToPoints(mem_point_path, vt_list, 'NONE')
-        ## Read wink values from points
-        logging.info('  Reading sink values')
-        data_dict = defaultdict(dict)
-        fields = [hru.dem_sink8_field, hru.dem_sink4_field, hru.fid_field]
-        with arcpy.da.SearchCursor(mem_point_path, fields) as s_cursor:
-            for row in s_cursor:
-                for i, field in enumerate(fields[:-1]):
-                    ## Set nodata or inactive cells to 0
-                    if row[i] is None:
-                        data_dict[int(row[-1])][field] = 0
-                    else:
-                        data_dict[int(row[-1])][field] = float(row[i])
-                del row
-        ## Write sink values to polygon
-        logging.info('  Writing sink values to polygons')
-        fields = [hru.dem_sink8_field, hru.dem_sink4_field, hru.fid_field]
-        with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
-            for row in u_cursor:
-                row_dict = data_dict.get(int(row[-1]), None)
-                for i, field in enumerate(fields[:-1]):
-                    if row_dict:
-                        row[i] = row_dict[field]
-                    else:
-                        row[i] = 0   
-                u_cursor.updateRow(row)
-                del row_dict, row
+        vt_list = []
+        if calc_sinks_8_way_flag and arcpy.Exists(dem_sink8_path):
+            vt_list.append([dem_sink8_path, hru.dem_sink8_field])
+        if calc_sinks_4_way_flag and arcpy.Exists(dem_sink4_path):
+            vt_list.append([dem_sink4_path, hru.dem_sink4_field])
+        if vt_list:
+            logging.info('\nExtracting sink values')
+            mem_point_path = os.path.join('in_memory', 'hru_point')
+            arcpy.CopyFeatures_management(hru.point_path, mem_point_path)
+            ExtractMultiValuesToPoints(mem_point_path, vt_list, 'NONE')
+            ## Read wink values from points
+            logging.info('  Reading sink values')
+            data_dict = defaultdict(dict)
+            fields = [hru.dem_sink8_field, hru.dem_sink4_field, hru.fid_field]
+            with arcpy.da.SearchCursor(mem_point_path, fields) as s_cursor:
+                for row in s_cursor:
+                    for i, field in enumerate(fields[:-1]):
+                        ## Set nodata or inactive cells to 0
+                        if row[i] is None:
+                            data_dict[int(row[-1])][field] = 0
+                        else:
+                            data_dict[int(row[-1])][field] = float(row[i])
+                    del row
+            ## Write sink values to polygon
+            logging.info('  Writing sink values to polygons')
+            fields = [hru.dem_sink8_field, hru.dem_sink4_field, hru.fid_field]
+            with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
+                for row in u_cursor:
+                    row_dict = data_dict.get(int(row[-1]), None)
+                    for i, field in enumerate(fields[:-1]):
+                        if row_dict:
+                            row[i] = row_dict[field]
+                        else:
+                            row[i] = 0   
+                    u_cursor.updateRow(row)
+                    del row_dict, row
 
 
         ## Cleanup
