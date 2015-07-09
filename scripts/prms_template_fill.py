@@ -400,7 +400,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                 tmax_field, param_values_dict['tmax_index'][i]))
             del tmax_values
 
-        ## Calculate mean monthly maximum temperature for all active cells
+        ## 
         logging.info('\nCalculating rain_adj/snow_adj')
         ratio_field_list = ['PPT_RT_{0:02d}'.format(m) for m in range(1,13)]
         param_name_dict['rain_adj'] = 'rain_adj'
@@ -425,7 +425,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             param_values_dict['snow_adj'][i] = value
         del ratio_values
 
-        ## Calculate mean monthly maximum temperature for all active cells
+        ## 
         logging.info('\nCalculating subbasin_down')
         param_name_dict['subbasin_down'] = 'subbasin_down'
         param_width_dict['subbasin_down'] = 0
@@ -442,9 +442,11 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             hru.flow_dir_field, hru.col_field, hru.row_field, hru.id_field]
         for row in arcpy.da.SearchCursor(hru.polygon_path, fields):
             ## Skip inactive cells
-            if int(row[0]) == 0: continue
+            if int(row[0]) == 0:
+                continue
             ## Skip non-lake and non-stream cells
-            if (int(row[1]) == 0 and int(row[2]) == 0): continue
+            elif (int(row[1]) == 0 and int(row[2]) == 0):
+                continue
             ## Read in parameters
             cell = (int(row[5]), int(row[6]))
             ## next_row_col(FLOW_DIR, CELL)

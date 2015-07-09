@@ -28,6 +28,7 @@ from support_functions import *
 ################################################################################
 
 class HRUParameters():
+    """"""
     def __init__(self, config_path):
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()
@@ -282,6 +283,7 @@ class HRUParameters():
 ################################################################################
 
 def next_row_col(flow_dir, cell):
+    """"""
     i_next, j_next = cell
     ## Upper left cell is 0,0
     if flow_dir in [1, 2, 128]:
@@ -295,6 +297,7 @@ def next_row_col(flow_dir, cell):
     return i_next, j_next
 
 def field_stat_func(input_path, value_field, stat='MAXIMUM'):
+    """"""
     value_list = []
     with arcpy.da.SearchCursor(input_path, value_field) as s_cursor:
         for row in s_cursor: value_list.append(row[0])
@@ -306,6 +309,7 @@ def field_stat_func(input_path, value_field, stat='MAXIMUM'):
         return float(sum(value_list)) / count(value_list)
 
 def add_field_func(hru_param_path, field_name, field_type='DOUBLE'):
+    """"""
     while not arcpy.ListFields(hru_param_path, field_name):
         logging.info('  Field: {0}'.format(field_name))
         try: arcpy.AddField_management(
@@ -315,6 +319,7 @@ def add_field_func(hru_param_path, field_name, field_type='DOUBLE'):
         sleep(0.5)
 
 def transform_func(spat_ref_a, spat_ref_b):
+    """"""
     ## Set preferred transforms
     if ((spat_ref_a.GCS.name == 'GCS_WGS_1984' and
          spat_ref_b.GCS.name == 'GCS_North_American_1983') or
@@ -328,6 +333,7 @@ def transform_func(spat_ref_a, spat_ref_b):
 ## This will check for matching spat. ref., snap point, and cellsize
 ## Assume raster is not valid unless it passes all checks
 def valid_raster_func(raster_path, raster_name, hru_param, cs=10):
+    """"""
     if not arcpy.Exists(raster_path):
         return False
     logging.debug('\nReading existing {0} raster'.format(raster_name))
@@ -368,6 +374,7 @@ def valid_raster_func(raster_path, raster_name, hru_param, cs=10):
 
 def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
                      nodata_value=-999, default_value=0):
+    """"""
     for zs_field, (raster_path, zs_stat) in sorted(zs_dict.items()):
         logging.info('  {0}: {1}'.format(zs_field, zs_stat))
         logging.info('    {0}'.format(raster_path))
@@ -500,10 +507,12 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
 
 
 def extent_string(extent_obj):
+    """"""
     return ' '.join(str(extent_obj).split()[:4])
     ##return ' '.join(['{0:.4f}'.format(s) for s in str(extent_obj).split()[:4]])
 
 def round_extent(extent_obj, n=10):
+    """"""
     return arcpy.Extent(
         round(extent_obj.XMin, n), round(extent_obj.YMin, n),
         round(extent_obj.XMax, n), round(extent_obj.YMax, n))
@@ -512,6 +521,7 @@ def round_extent(extent_obj, n=10):
 ## This is similar to the GDAL implementation
 def adjust_extent_to_snap(extent_obj, snap_pnt, cs, method='EXPAND',
                           integer_flag=True):
+    """"""
     if method.upper() == 'ROUND':
         extent_xmin = math.floor(
             (extent_obj.XMin - snap_pnt.X) / cs + 0.5) * cs + snap_pnt.X
@@ -547,6 +557,7 @@ def adjust_extent_to_snap(extent_obj, snap_pnt, cs, method='EXPAND',
         return arcpy.Extent(extent_xmin, extent_ymin, extent_xmax, extent_ymax)
 
 def buffer_extent_func(extent_obj, extent_buffer):
+    """"""
     ##extent_obj = arcpy.Describe(extent_feature).extent
     extent_xmin = extent_obj.XMin-extent_buffer
     extent_ymin = extent_obj.YMin-extent_buffer
@@ -558,6 +569,7 @@ def buffer_extent_func(extent_obj, extent_buffer):
 ## Check if rasters are aligned to snap_raster
 ## Check if rasters have same cellsize as snap_raster
 def snapped(extent_obj, snap_pnt, cs):
+    """"""
     if (((snap_pnt.X - extent_obj.XMin) % cs == 0) and
         ((snap_pnt.X - extent_obj.XMax) % cs == 0) and
         ((snap_pnt.Y - extent_obj.YMin) % cs == 0) and
@@ -567,6 +579,7 @@ def snapped(extent_obj, snap_pnt, cs):
         return False
 
 def get_ini_file(workspace, ini_re, function_str='function'):
+    """"""
     ## Get ini file name
     ini_file_list = build_file_list(workspace, ini_re)
     ## Filter field list ini file
@@ -605,6 +618,7 @@ def get_ini_file(workspace, ini_re, function_str='function'):
     return config_filepath
 
 def get_param(param_str, param_default, config, section='INPUTS'):
+    """"""
     param_type = type(param_default)
     try:
         if param_type is float:
@@ -633,6 +647,7 @@ def get_param(param_str, param_default, config, section='INPUTS'):
     return param_value
 
 def build_file_list(ws, test_re, test_other_re=None):
+    """"""
     if test_other_re is None:
         test_other_re=re.compile('a^')
     if os.path.isdir(ws):
@@ -642,6 +657,7 @@ def build_file_list(ws, test_re, test_other_re=None):
     else: return []
 
 def get_prism_data_name():
+    """"""
     #### Get PRISM data name
     data_name_dict = dict()
     data_name_dict[1] = 'PPT'
@@ -666,6 +682,7 @@ def get_prism_data_name():
 
 def project_hru_extent_func(hru_extent, hru_cs, hru_sr, 
                             target_extent, target_cs, target_sr):
+    """"""
     logging.debug('  Projecting extent')
     logging.debug('  HRU Extent:   {0}'.format(extent_string(hru_extent)))
     logging.debug('  HRU cellsize: {0}'.format(hru_cs))
@@ -717,6 +734,7 @@ def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
 def project_raster_func(input_raster, output_raster, output_sr,
                         proj_method, input_cs, transform_str,
                         reg_point, input_sr, hru_param):
+    """"""
     ## Input raster can be a raster object or a raster path
     ##print isinstance(input_raster, Raster), isinstance(input_raster, str)
     try: input_extent = Raster(input_raster).extent
@@ -741,14 +759,30 @@ def project_raster_func(input_raster, output_raster, output_sr,
     arcpy.Delete_management(clip_path)
    
 def cell_area_func(hru_param_path, area_field):
+    """"""
     arcpy.CalculateField_management(
         hru_param_path, area_field, '!SHAPE.AREA@acres!', 'PYTHON')
 
-## These two functions only set values that are in zone
-## They don't reset values that are out of zone
-def zone_by_area_func(
-    zone_path, zone_field, zone_value, hru_param_path, hru_param,  
-    hru_area_field='HRU_AREA', zone_area_field=None, area_pct=50):
+def zone_by_area_func(zone_path, zone_field, zone_value, hru_param_path,
+                      hru_param, hru_area_field='HRU_AREA',
+                      zone_area_field=None, area_pct=50):
+    """Flag cells that are inside a feature based on an area weighting
+
+    Set values that are in zone, but don't reset values that are out of zone
+
+    Args:
+        zone_path (str):
+        zone_field (str):
+        zone_value (int):
+        hru_param_path (str):
+        hru_param: class:`support_functions.HRUParameters`
+        hru_area_field (str):
+        zone_area_field (str):
+        area_pct ():
+
+    Returns:
+        None
+    """
     zone_value_field = 'ZONE_VALUE'
     int_area_field = 'INT_AREA'
     int_pct_field = 'INT_PCT'
@@ -807,9 +841,25 @@ def zone_by_area_func(
                 u_cursor.updateRow(row)
             except KeyError: pass
 
-def zone_by_centroid_func(
-    zone_path, zone_field, zone_value, 
-    hru_param_path, hru_point_path, hru_param):
+def zone_by_centroid_func(zone_path, zone_field, zone_value, 
+                          hru_param_path, hru_point_path, hru_param):
+    """Flag cells that are inside a feature based on the centroid location
+
+    Set values that are in zone, but don't reset values that are out of zone
+
+    Args:
+        zone_path (str):
+        zone_field (str):
+        zone_value (int):
+        hru_param_path (str):
+        hru_point_path (str):
+        hru_param: class:`support_functions.HRUParameters`
+
+    Returns:
+        None
+    """
+    logging.debug('\nzone_by_centroid_func')
+    logging.debug('  {}'.format(zone_path))
     ## Need to set zone value into a field before intersect
     ## If zone_value is FID, add 1 so that only zone cells are 0
     zone_value_field = 'ZONE_VALUE'
@@ -818,17 +868,21 @@ def zone_by_centroid_func(
         arcpy.CalculateField_management(
             zone_path, zone_value_field,
             '!{0}! + 1'.format(zone_value), 'PYTHON')
-    ## If zone value is an INT, save it into a field first
+    ## Save zone value into a field first
     elif type(zone_value) is int:
-        ##zone_value = int(zone_value)
         arcpy.CalculateField_management(
             zone_path, zone_value_field, zone_value, 'PYTHON')
-    ## Use zone_value field directly
+        ## DEADBEEF
+        ## Use zone_value field directly
+        ##zone_value = int(zone_value)
     else:
-        ##zone_value_field = zone_value
         arcpy.CalculateField_management(
             zone_path, zone_value_field,
             '!{0}!'.format(zone_value), 'PYTHON')
+        ## DEADBEEF
+        ## Use zone_value field directly
+        ##zone_value_field = zone_value
+
     ## Intersect the zone layer with the fishnet
     ##zone_int_path = os.path.join('in_memory', 'hru_ppt_zones')
     zone_int_path = zone_path.replace('.shp', '_intersect.shp')
@@ -838,12 +892,14 @@ def zone_by_centroid_func(
     arcpy.MakeFeatureLayer_management(zone_int_path, zone_int_layer)
     arcpy.SelectLayerByAttribute_management(zone_int_layer, 'CLEAR_SELECTION')
     arcpy.SelectLayerByAttribute_management(zone_int_layer, 'SWITCH_SELECTION')
+
     ## Read in FID of selected cells
     hru_point_dict = dict()
     fields = (hru_param.fid_field, zone_value_field)
     with arcpy.da.SearchCursor(zone_int_layer, fields) as s_cursor:
         for row in s_cursor:
             hru_point_dict[int(row[0])] = row[1]
+
     ## Set value of selected HRU cells
     fields = (hru_param.fid_field, zone_field)
     with arcpy.da.UpdateCursor(hru_param_path, fields) as u_cursor:
@@ -857,9 +913,9 @@ def zone_by_centroid_func(
     ## Cleanup
     arcpy.Delete_management(zone_int_layer)
 
-def jensen_haise_func(
-    hru_param_path, jh_coef_field, hru_elev_field,
-    jh_tmin_field, jh_tmax_field):
+def jensen_haise_func(hru_param_path, jh_coef_field, hru_elev_field,
+                      jh_tmin_field, jh_tmax_field):
+    """"""
     jh_cb = (
         'def ea(temp_c):\n'+
         '    return 6.1078 * math.exp((17.269 * temp_c) / (temp_c + 237.3))\n'+
@@ -874,6 +930,7 @@ def jensen_haise_func(
 ################################################################################
 
 def remap_check(remap_path):
+    """"""
     ## Check that the file exists
     if not os.path.isfile(remap_path):
         logging.error(
@@ -945,6 +1002,7 @@ def remap_check(remap_path):
 ####arcpy.DeleteField_management(polygon_path, dem_aspect_field)
     
 def remap_code_block(remap_path):
+    """"""
     with open(remap_path) as remap_f:
         lines = remap_f.readlines()
     remap_cb = ''
@@ -1018,8 +1076,10 @@ def is_number(s):
         return False
 
 def raster_path_to_array(input_path, mask_extent=None, return_nodata=False):
+    """"""
     return raster_obj_to_array(Raster(input_path), mask_extent, return_nodata)
 def raster_obj_to_array(input_obj, mask_extent=None, return_nodata=False):
+    """"""
     input_nodata = input_obj.noDataValue
     input_cs = input_obj.meanCellHeight
     input_rows, input_cols = input_obj.height, input_obj.width
@@ -1047,6 +1107,7 @@ def raster_obj_to_array(input_obj, mask_extent=None, return_nodata=False):
         return output_array
 
 def array_to_raster(input_array, output_path, pnt, cs, mask_array=None):
+    """"""
     output_array = np.copy(input_array)
     ## Float arrays have to have nodata set to some value (-9999)
     if (output_array.dtype == np.float32 or
@@ -1067,8 +1128,8 @@ def array_to_raster(input_array, output_path, pnt, cs, mask_array=None):
         output_path, env.outputCoordinateSystem)
     arcpy.CalculateStatistics_management(output_path)
 
-#### Flood fill algorithm
 def flood_fill(test_array, four_way_flag=True, edge_flt=None):
+    """Flood fill algorithm"""
     input_array = np.copy(test_array)
     input_rows, input_cols = input_array.shape
     h_max = np.nanmax(input_array * 2.0)
@@ -1146,6 +1207,7 @@ def np_binary_erosion(input_array, structure=np.ones((3,3)).astype(np.bool)):
         structure: Structuring element used for the erosion. Non-zero elements
             are considered True. If no structuring element is provided, an
             element is generated with a square connectivity equal to one.
+
     Returns:
         binary_erosion: Erosion of the input by the stucturing element
     """
