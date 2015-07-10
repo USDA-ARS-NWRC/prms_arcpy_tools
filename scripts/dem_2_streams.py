@@ -783,7 +783,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
         ## Cleanup
         arcpy.Delete_management(mem_point_path)
-        del mem_point_path, vt_list, data_dict, fields
+        del mem_point_path, vt_list, data_dict, field
 
 
         ## Re-Calculate HRU_ELEV
