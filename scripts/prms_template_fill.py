@@ -3,7 +3,7 @@
 # Purpose:      Fill PRMS Parameter File Template
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-07-10
 # Python:       2.7
 #--------------------------------
 
@@ -454,35 +454,47 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             cell_dict[cell] = [
                 int(row[7]), int(row[3]), next_row_col(int(row[4]), cell)]
             del cell
-        ## Get subset of cells is subbasin <> next_subbasin
+
+        ## Get subset of cells if subbasin <> next_subbasin
         subbasin_list = []
-        for cell, row in cell_dict.items():
-            if row[2] not in cell_dict.keys():
-                ## Set exit gauge subbasin to 0
-                subbasin_list.append([row[1], 0])
-            elif row[1] <> cell_dict[row[2]][1]:
-                subbasin_list.append([row[1], cell_dict[row[2]][1]])
+        ## CELL, (HRU_ID, SUBBASIN, NEXT_CELL)
+        ##for cell, row in cell_dict.items():
+        for cell, (hru_id, subbasin, next_cell) in cell_dict.items():
+            ## Skip cells that are already subbasin 0 (inactive?)
+            ## If next cell isn't in list, assume next cell is out of the model
+            ##   and set exit gauge subbasin to 0
+            ## If the subbasin of the current cell doesn't match the subbasin
+            ##   of the next cell, save the down subbasin
+            if subbasin == 0:
+                continue
+            elif next_cell not in cell_dict.keys():
+                if [subbasin, 0] not in subbasin_list:
+                    subbasin_list.append([subbasin, 0])
+            elif subbasin <> cell_dict[next_cell][1]:
+                subbasin_list.append([subbasin, cell_dict[next_cell][1]])
         for i, (subbasin, subbasin_down) in enumerate(sorted(subbasin_list)):
             param_values_dict['subbasin_down'][i] = subbasin_down
             logging.debug('  {0}'.format(param_values_dict['subbasin_down'][i]))
         del subbasin_list
 
 
-        ## lake_hru parameter
-        logging.info('\nCalculating LAKE_HRU from HRU_ID for all lake HRU\'s')
-        param_name_dict['lake_hru'] = 'lake_hru'
-        param_width_dict['lake_hru'] = 0
-        param_dimen_count_dict['lake_hru'] = 1
-        param_dimen_names_dict['lake_hru'] = ['nlake']
-        param_values_count_dict['lake_hru'] = dimen_size_dict['nlake']
-        param_type_dict['lake_hru'] = 1
-        lake_hru_id_list = [
-            row[1] for row in arcpy.da.SearchCursor(
-                hru.polygon_path, (hru.type_field, hru.id_field))
-            if int(row[0]) == 2]
-        for i,lake_hru_id in enumerate(sorted(lake_hru_id_list)):
-            logging.info('  {0} {1}'.format(i, lake_hru_id))
-            param_values_dict['lake_hru'][i] = lake_hru_id
+        #### DEADBEEF - lake_hru is not used in PRMS 3.0.X or gsflow
+        ####   It is used in PRMS 4.0 though
+        #### lake_hru parameter
+        ##logging.info('\nCalculating LAKE_HRU from HRU_ID for all lake HRU\'s')
+        ##param_name_dict['lake_hru'] = 'lake_hru'
+        ##param_width_dict['lake_hru'] = 0
+        ##param_dimen_count_dict['lake_hru'] = 1
+        ##param_dimen_names_dict['lake_hru'] = ['nlake']
+        ##param_values_count_dict['lake_hru'] = dimen_size_dict['nlake']
+        ##param_type_dict['lake_hru'] = 1
+        ##lake_hru_id_list = [
+        ##    row[1] for row in arcpy.da.SearchCursor(
+        ##        hru.polygon_path, (hru.type_field, hru.id_field))
+        ##    if int(row[0]) == 2]
+        ##for i,lake_hru_id in enumerate(sorted(lake_hru_id_list)):
+        ##    ##logging.debug('  {0} {1}'.format(i, lake_hru_id))
+        ##    param_values_dict['lake_hru'][i] = lake_hru_id
 
 
         ## Read in CRT parameters
@@ -584,7 +596,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             dimen_size_dict['ncascdgw'] += 1
             param_values_dict['gw_up_id'][i] = lake_hru_id
             param_values_dict['gw_down_id'][i] = 0
-	    ## DEADBEEF - PRMS didn't like when set to OUTSEG, but 2 worked?
+            ## DEADBEEF - PRMS didn't like when set to OUTSEG, but 2 worked?
             ##param_values_dict['gw_strmseg_down_id'][i] = outseg
             param_values_dict['gw_strmseg_down_id'][i] = 2
             param_values_dict['gw_pct_up'][i] = 1.00
