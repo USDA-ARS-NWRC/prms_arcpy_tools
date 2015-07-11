@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW Flow Parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-07-10
 # Python:       2.7
 #--------------------------------
 
@@ -483,47 +483,48 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             hru_type_in_dict[cell] = int(row[0])
             cell_xy_dict[cell] = (int(row[5]), int(row[6]))
 
-        ## Identify all active/lake cells that flow to inactive water cells
-        if set_inactive_water_flag:
-            logging.debug('  Identifying cells that exit to inactive-water cells')
-            out_cell_xy_list = sorted([
-                cell_xy for cell, cell_xy in cell_xy_dict.items()
-                if (cell not in input_xy_dict.keys() and
-                    cell in hru_type_in_dict.keys() and
-                    hru_type_in_dict[cell] in [1,2,3] and
-                    cell in out_cell_dict.keys() and 
-                    out_cell_dict[cell] in hru_type_in_dict.keys() and 
-                    hru_type_in_dict[out_cell_dict[cell]] == 4)])
-            fields = ["SHAPE@XY", subbasin_zone_field]
-            with arcpy.da.InsertCursor(subbasin_points_path, fields) as insert_c:
-                for out_cell_xy in out_cell_xy_list:
-                    insert_c.insertRow([out_cell_xy, subbasin_input_count+1])
-            del fields
-        else:
-            out_cell_xy_list = []
+        ## Identify all active/lake cells that exit the model
+        ##   or flow to an inactive cell
+        logging.debug('  Identifying active cells that exit the model')
+        out_cell_xy_list = []
+        for cell, cell_xy in cell_xy_dict.items():
+            if cell in input_xy_dict.keys():
+                continue
+            elif cell not in hru_type_in_dict.keys():
+                continue
+            elif hru_type_in_dict[cell] not in [1,2]:
+                continue
+            elif cell not in out_cell_dict.keys():
+                continue
+            elif out_cell_dict[cell] not in hru_type_in_dict.keys():
+                out_cell_xy_list.append(cell_xy)
+            elif (out_cell_dict[cell] in hru_type_in_dict.keys() and
+                  hru_type_in_dict[out_cell_dict[cell]] not in [1,2]):
+                out_cell_xy_list.append(cell_xy)
+        fields = ["SHAPE@XY", subbasin_zone_field]
+        with arcpy.da.InsertCursor(subbasin_points_path, fields) as insert_c:
+            for out_cell_xy in sorted(out_cell_xy_list):
+                insert_c.insertRow([out_cell_xy, subbasin_input_count+1])
+        del fields
 
-        ## Flag outflow cells (subbasin points?) in HRU poly
-        logging.info('  Flag outflow cells')
-        logging.debug('    Set HRU_TYPE_IN = 1 for stream inactive-water exit cells')
-        logging.debug('    Set HRU_TYPE_IN = 3 for non-stream inactive-water exit cells')
-        fields = [hru.type_in_field, hru.x_field, hru.y_field, hru.outflow_field]
-        with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
-            for row in u_cursor:
-                cell_xy = (row[1], row[2])
-                if int(row[0]) == 0:
-                    continue
-                elif input_xy_dict and cell_xy in input_xy_dict.values():
-                    row[0] = 1
-                    row[3] = 1
-                elif out_cell_xy_list and cell_xy in out_cell_xy_list:
-                    row[0] = 3
-                    row[3] = 1
-                else:
-                    row[3] = 0   
-                u_cursor.updateRow(row)
-        del out_cell_dict, hru_type_in_dict, cell_xy_dict
-        del out_cell_xy_list
-
+        #### DEADBEEF - What does this do?  Is it needed
+        #### Flag outflow cells (subbasin points?) in HRU poly
+        ##logging.info('  Flag outflow cells')
+        ##fields = [hru.type_in_field, hru.x_field, hru.y_field, hru.outflow_field]
+        ##with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
+        ##    for row in u_cursor:
+        ##        cell_xy = (row[1], row[2])
+        ##        if int(row[0]) == 0:
+        ##            continue
+        ##        elif input_xy_dict and cell_xy in input_xy_dict.values():
+        ##            row[3] = 1
+        ##        elif out_cell_xy_list and cell_xy in out_cell_xy_list:
+        ##            row[3] = 1
+        ##        else:
+        ##            row[3] = 0   
+        ##        u_cursor.updateRow(row)
+        ##del out_cell_dict, hru_type_in_dict, cell_xy_dict
+        ##del out_cell_xy_list
 
 
         ## Flow Accumulation
@@ -638,15 +639,6 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         basin_obj.save(basin_path)
         del basin_obj
 
-
-        ## Reset HRU_TYPE to 0 for inactive water cells
-        logging.info('Clearing inactive water cells (HRU_TYPE 4)')
-        hru_type_obj = Con((hru_type_in_obj == 4), 0, hru_type_in_obj)
-        logging.info('Clearing edge cells (HRU_TYPE 3)')
-        hru_type_obj = Con((hru_type_obj == 3), 1, hru_type_obj)
-        hru_type_obj.save(hru_type_path)
-        del hru_type_obj
-        del hru_type_in_obj
 
         ## Clear subbasin value if HRU_TYPE_IN is 0
         logging.info('Clearing subbasin ID for inactive cells')

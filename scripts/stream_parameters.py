@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW stream parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-07-10
 # Python:       2.7
 #--------------------------------
 
@@ -251,9 +251,9 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
             hru.krch_field, hru.irch_field, hru.jrch_field]
         with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
             for row in update_c:
-                if (int(row[0]) == 1 or int(row[0]) == 3) and int(row[1]) > 0:
+                if (int(row[0]) == 1 and int(row[1]) > 0):
                 ##DEADBEEF
-                ##if (int(row[0]) == 1 and int(row[1]) > 0):
+                ##if (int(row[0]) == 1 or int(row[0]) == 3) and int(row[1]) > 0:
                     row[4], row[5], row[6] = 1, int(row[2]), int(row[3])
                 else:
                     row[4], row[5], row[6] = 0, 0, 0
@@ -302,10 +302,10 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
             ## Skip inactive cells
             if int(row[0]) == 0:
                 continue
-            ## Skip edge cells
             ## DEADBEEF
-            elif int(row[0]) == 3:
-                continue
+            ## Skip cells flowing to inactive water
+            ##elif int(row[0]) == 3:
+            ##    continue
             ## Skip if not lake and not stream
             elif (int(row[1]) == 0 and int(row[2]) == 0):
                 continue
@@ -337,6 +337,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
             out_cell = list(set(out_cells)-set(iseg_cells))
 
             ## Process streams and lakes separately
+            ## Streams
             if iseg > 0:
                 ## If there is more than one out_cell
                 ##   there is a problem with the stream network
@@ -368,6 +369,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
                     cell_dict[iseg_cell][4:] = [
                         outseg, reach_dict[iseg_cell], len(iseg_cells)]
                 del reach_dict, start_cell, outseg
+            ## Lakes
             elif iseg < 0:
                 ## For lake cells, there can be multiple outlets if all of them
                 ##   are to inactive cells or out of the model

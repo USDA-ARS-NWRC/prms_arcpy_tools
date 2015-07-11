@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW HRU parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-07-10
 # Python:       2.7
 #--------------------------------
 
@@ -72,15 +72,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             lake_orig_path = inputs_cfg.get('INPUTS', 'lake_path')
             lake_zone_field = inputs_cfg.get('INPUTS', 'lake_zone_field')
             lake_area_pct = inputs_cfg.getfloat('INPUTS', 'lake_area_pct')
-        try:
-            set_inactive_water_flag = inputs_cfg.getboolean(
-                'INPUTS', 'set_inactive_water_flag')
-        except:
-            logging.debug('  set_inactive_water_flag = False')
-            set_inactive_water_flag = False
-        if set_inactive_water_flag:
-            inactive_water_orig_path = inputs_cfg.get(
-                'INPUTS', 'inactive_water_path')
 
         ## Control flags
         calc_flow_acc_dem_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_dem_flag')
@@ -126,17 +117,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.error(
                     '\nERROR: lake_zone_field field {0} must be an integer type\n'.format(
                         lake_zone_field))
-                raise SystemExit()      
-        if set_inactive_water_flag:
-            if not arcpy.Exists(inactive_water_orig_path):
-                logging.error(
-                    '\nERROR: Inactive water layer ({0}) does not exist'.format(
-                        inactive_water_orig_path))
-                raise SystemExit()
-            ## inactive_water_orig_path must be a polygon shapefile
-            if arcpy.Describe(inactive_water_orig_path).datasetType <> 'FeatureClass':
-                logging.error(
-                    '\nERROR: inactive_water_path must be a polygon shapefile')
                 raise SystemExit()
 
         ## For now, study area has to be a polygon
@@ -154,8 +134,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         study_area_path = os.path.join(hru_temp_ws, 'study_area.shp')
         lake_path = os.path.join(hru_temp_ws, 'lakes.shp')
         lake_clip_path = os.path.join(hru_temp_ws, 'lake_clip.shp')
-        inactive_water_path = os.path.join(hru_temp_ws, 'inactive_water.shp')
-        inactive_water_clip_path = os.path.join(hru_temp_ws, 'inactive_water_clip.shp')
 
 
         ## Set ArcGIS environment variables
@@ -394,7 +372,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             arcpy.CalculateField_management(
                 hru.polygon_path, hru.lake_id_field, 0, 'PYTHON')
         if set_lake_flag:
-        ##if set_lake_flag or set_inactive_water_flag:
             logging.info('Resetting {0} to 0'.format(hru.lake_area_field))
             arcpy.CalculateField_management(
                 hru.polygon_path, hru.lake_area_field, 0, 'PYTHON')
@@ -477,62 +454,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 hru.lake_area_field, lake_area_pct)
             ## Cleanup
             del lake_layer, lake_desc, lake_sr
-
-
-
-        ## Calculate HRU Type for inactive water (HRU_TYPE = 4)
-        if set_inactive_water_flag:
-            logging.info('\nCalculating cell HRU Type & ID for inactive water')
-            inactive_water_layer = 'inactive_water_layer'
-            inactive_water_desc = arcpy.Describe(inactive_water_orig_path)
-            inactive_water_sr = inactive_water_desc.spatialReference
-            logging.debug('  Inactive water: {0}'.format(inactive_water_orig_path))
-            logging.debug('  Inactive water spat. ref.:  {0}'.format(inactive_water_sr.name))
-            logging.debug('  Inactive water GCS:         {0}'.format(inactive_water_sr.GCS.name))
-            
-            ## If inactive water spat_ref doesn't match hru_param spat_ref
-            ## Project inactive water to hru_param spat ref
-            ## Otherwise, read inactive water directly       
-            if hru.sr.name <> inactive_water_sr.name:
-                logging.info('  Projecting inactive water...')
-                ## Set preferred transforms
-                transform_str = transform_func(hru.sr, inactive_water_sr)
-                logging.debug('    Transform: {0}'.format(transform_str))
-                ## Project inactive water shapefile
-                arcpy.Project_management(
-                    inactive_water_orig_path, inactive_water_path,
-                    hru.sr, transform_str, inactive_water_sr)
-                ##arcpy.MakeFeatureLayer_management(
-                ##    inactive_water_path, inactive_water_layer)
-                del transform_str
-            else:
-                arcpy.Copy_management(
-                    inactive_water_orig_path, inactive_water_path)
-                ##arcpy.MakeFeatureLayer_management(
-                ##    inactive_water_orig_path, inactive_water_layer)
-                
-            ## Clip inactive water by study area after projecting inactive water
-            ##logging.info('  Clipping inactive water...')
-            ##arcpy.Clip_analysis(
-            ##    inactive_water_layer, study_area_path, inactive_water_clip_path)
-            ## Remove all unnecesary fields
-            ##for field in arcpy.ListFields(inactive_water_clip_path):
-            ##    if field.name not in [inactive_water_zone_field, 'Shape']:
-            ##        try: arcpy.DeleteField_management(inactive_water_clip_path, field.name)
-            ##        except: pass
-                
-            ## Set inactive water HRU_TYPE
-            logging.info('  Setting inactive water {0}'.format(hru.type_in_field))
-            zone_by_centroid_func(
-                inactive_water_path, hru.type_in_field, 4, 
-                hru.polygon_path, hru.point_path, hru)
-            ##zone_by_area_func(
-            ##    inactive_water_path, hru.type_in_field, 4, 
-            ##    hru.polygon_path, hru, hru.area_field,
-            ##    hru.lake_area_field, 50)
-            ## Cleanup
-            del inactive_water_layer, inactive_water_desc, inactive_water_sr
-
 
         ## Copy HRUTYPE_IN for HRU_TYPE
         ## HRU_TYPE can then be modified by later scripts
