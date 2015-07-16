@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW stream parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-10
+# Created       2015-07-16
 # Python:       2.7
 #--------------------------------
 
@@ -556,8 +556,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
         del stream_cells_list
             
         ## Generate OUTFLOW_HRU.DAT for CRT
-        ## Generate outflow points at every subbasin gauge
-        ##   This can include "fake" gauges where cells flow to inactive water
+        ## Outflow cells exit the model to inactive cells or out of the domain
         ##   Outflow field is set in dem_2_streams
         logging.info("  {0}".format(
             os.path.basename(crt_outflow_hru_path)))

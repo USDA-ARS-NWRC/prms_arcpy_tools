@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW Flow Parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-10
+# Created       2015-07-16
 # Python:       2.7
 #--------------------------------
 
@@ -483,14 +483,17 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             hru_type_in_dict[cell] = int(row[0])
             cell_xy_dict[cell] = (int(row[5]), int(row[6]))
 
+
         ## Identify all active/lake cells that exit the model
         ##   or flow to an inactive cell
         logging.debug('  Identifying active cells that exit the model')
         out_cell_xy_list = []
         for cell, cell_xy in cell_xy_dict.items():
-            if cell in input_xy_dict.keys():
-                continue
-            elif cell not in hru_type_in_dict.keys():
+            #### DEADBEEF - This is finding exit cells that aren't already gauges
+            ##if cell in input_xy_dict.keys():
+            ##    continue
+            ##elif cell not in hru_type_in_dict.keys():
+            if cell not in hru_type_in_dict.keys():
                 continue
             elif hru_type_in_dict[cell] not in [1,2]:
                 continue
@@ -507,24 +510,25 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 insert_c.insertRow([out_cell_xy, subbasin_input_count+1])
         del fields
 
-        #### DEADBEEF - What does this do?  Is it needed
-        #### Flag outflow cells (subbasin points?) in HRU poly
-        ##logging.info('  Flag outflow cells')
-        ##fields = [hru.type_in_field, hru.x_field, hru.y_field, hru.outflow_field]
-        ##with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
-        ##    for row in u_cursor:
-        ##        cell_xy = (row[1], row[2])
-        ##        if int(row[0]) == 0:
-        ##            continue
-        ##        elif input_xy_dict and cell_xy in input_xy_dict.values():
-        ##            row[3] = 1
-        ##        elif out_cell_xy_list and cell_xy in out_cell_xy_list:
-        ##            row[3] = 1
-        ##        else:
-        ##            row[3] = 0   
-        ##        u_cursor.updateRow(row)
-        ##del out_cell_dict, hru_type_in_dict, cell_xy_dict
-        ##del out_cell_xy_list
+
+        ## Outflow cells exit the model to inactive cells or out of the domain
+        ## These cells will be used to set the OUTFLOW_HRU.DAT for CRT
+        ##   in crt_fill_parameters and stream_parameters
+        logging.info('  Flag outflow cells')
+        fields = [hru.type_in_field, hru.x_field, hru.y_field, hru.outflow_field]
+        with arcpy.da.UpdateCursor(hru.polygon_path, fields) as u_cursor:
+            for row in u_cursor:
+                cell_xy = (row[1], row[2])
+                ## Inactive cells can't be outflow cells
+                if int(row[0]) == 0:
+                    continue
+                elif out_cell_xy_list and cell_xy in out_cell_xy_list:
+                    row[3] = 1
+                else:
+                    row[3] = 0   
+                u_cursor.updateRow(row)
+        del out_cell_dict, hru_type_in_dict, cell_xy_dict
+        del out_cell_xy_list
 
 
         ## Flow Accumulation
