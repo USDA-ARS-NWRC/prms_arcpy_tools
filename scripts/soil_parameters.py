@@ -49,7 +49,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'soil_parameters_log.txt'
@@ -93,36 +93,36 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         ## All of the soil rasters must exist
         ## Check that the projected/clipped/filled raster exists
         if not arcpy.Exists(awc_path):
             logging.error('\nERROR: AWC raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if not arcpy.Exists(clay_pct_path):
             logging.error('\nERROR: Clay raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if not arcpy.Exists(sand_pct_path):
             logging.error('\nERROR: Sand raster does not exist')
-            raise SystemExit()
+            sys.exit()
         ##if not arcpy.Exists(silt_path):
         ##    logging.error('\nERROR: Silt raster does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if ((calc_ssr2gw_rate_flag or calc_slowcoef_flag) and
         ##    not arcpy.Exists(ksat_path)):
         if not arcpy.Exists(ksat_path):
             logging.error('\nERROR: Ksat raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if clip_root_depth_flag and not arcpy.Exists(soil_depth_path):
             logging.error('\nERROR: Soil depth raster does not exist')
-            raise SystemExit()
+            sys.exit()
         ## Check soil init ratios
         if moist_init_ratio < 0 or moist_init_ratio > 1:
             logging.error('\nERROR: Soil moist_init_ratio must be between 0 & 1')
-            raise SystemExit()            
+            sys.exit()            
         if rechr_init_ratio < 0 or rechr_init_ratio > 1:
             logging.error('\nERROR: Soil rechr_init_ratio must be between 0 & 1')
-            raise SystemExit()
+            sys.exit()
         
         ## DEM Slope is needed for SSR2GW_RATE
         dem_temp_ws = os.path.join(hru.param_ws, 'dem_rasters')
@@ -131,12 +131,12 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: DEM temp folder does not exist\n'+
                 '\nERROR: Try re-running dem_2_stream.py')
-            raise SystemExit()
+            sys.exit()
         if not os.path.isfile(dem_slope_path):
             logging.error(
                 '\nERROR: Slope raster does not exist\n'+
                 '\nERROR: Try re-running dem_2_stream.py')
-            raise SystemExit()
+            sys.exit()
 
         ## Output paths
         soil_type_path = os.path.join(soil_temp_ws, 'soil_type.img')
@@ -152,7 +152,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Root depth raster does not exists'+
                 '\nERROR: Try re-running veg_parameters script\n')
-            raise SystemExit()
+            sys.exit()
 
 
         ## Set ArcGIS environment variables

@@ -51,7 +51,7 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'ppt_ratio_parameters_log.txt'
@@ -92,13 +92,13 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.error(
                     '\nERROR: ppt_obs_list (mean monthly precipitation) '+
                     'values could not be parsed as floats')
-                raise SystemExit()
+                sys.exit()
             ## Check that there are 12 values
             if len(ppt_obs_list) <> 12:
                 logging.error(
                     '\nERROR: There must be exactly 12 mean monthly '+
                     'observed precipitation values based to ppt_obs_list')
-                raise SystemExit()
+                sys.exit()
             ## Check that HRU_ID is valid
             logging.info('  PPT HRU_ID: {0}'.format(ppt_hru_id))
             if ppt_hru_id in [int(row[0]) for row in sorted(
@@ -140,18 +140,18 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         if set_ppt_zones_flag:
             if not arcpy.Exists(ppt_zone_orig_path):
                 logging.error(
                     '\nERROR: PPT Zone ({0}) does not exist'.format(
                         ppt_zone_orig_path))
-                raise SystemExit()
+                sys.exit()
             ## ppt_zone_path must be a polygon shapefile
             if arcpy.Describe(ppt_zone_orig_path).datasetType <> 'FeatureClass':
                 logging.error(
                     '\nERROR: ppt_zone_path must be a polygon shapefile')
-                raise SystemExit()
+                sys.exit()
             ## Check ppt_zone_fields
             if ppt_zone_field.upper() in ['', 'FID', 'NONE']:
                 ppt_zone_field = arcpy.Describe(ppt_zone_orig_path).OIDFieldName
@@ -162,7 +162,7 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.error(
                     '\nERROR: ppt_zone_field field {0} does not exist\n'.format(
                         ppt_zone_field))
-                raise SystemExit()
+                sys.exit()
             ## Need to check that ppt_zone_field is an int type
             elif not [f.type for f in arcpy.Describe(ppt_zone_orig_path).fields
                       if (f.name == ppt_zone_field and
@@ -170,14 +170,14 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.error(
                     '\nERROR: ppt_zone_field field {0} must be an integer type\n'.format(
                         ppt_zone_field))
-                raise SystemExit()
+                sys.exit()
             ## Need to check that ppt_zone_field is all positive values
             elif min([row[0] for row in arcpy.da.SearchCursor(
                 ppt_zone_orig_path, [ppt_zone_field])]) <= 0:
                 logging.error(
                     '\nERROR: ppt_zone_field values must be positive\n'.format(
                         ppt_zone_field))
-                raise SystemExit()
+                sys.exit()
 
         ## Build output folders if necesssary
         ppt_ratio_temp_ws = os.path.join(hru.param_ws, 'ppt_ratio_temp')

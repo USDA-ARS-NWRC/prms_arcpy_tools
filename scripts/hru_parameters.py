@@ -49,7 +49,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
         logging.debug('\nReading Input File')
 
         ## Log DEBUG to file
@@ -87,18 +87,18 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         if set_lake_flag:
             if not arcpy.Exists(lake_orig_path):
                 logging.error(
                     '\nERROR: Lake layer ({0}) does not exist'.format(
                         lake_orig_path))
-                raise SystemExit()
+                sys.exit()
             ## lake_path must be a polygon shapefile
             if arcpy.Describe(lake_orig_path).datasetType <> 'FeatureClass':
                 logging.error(
                     '\nERROR: lake_path must be a polygon shapefile')
-                raise SystemExit()
+                sys.exit()
             ## Check lake_zone_field
             if lake_zone_field.upper() in ['', 'FID', 'NONE']:
                 lake_zone_field = arcpy.Describe(lake_orig_path).OIDFieldName
@@ -109,7 +109,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.error(
                     '\nERROR: lake_zone_field field {0} does not exist\n'.format(
                         lake_zone_field))
-                raise SystemExit()
+                sys.exit()
             ## Need to check that lake_zone_field is an int type
             elif not [f.type for f in arcpy.Describe(lake_orig_path).fields
                       if (f.name == lake_zone_field and
@@ -117,13 +117,13 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.error(
                     '\nERROR: lake_zone_field field {0} must be an integer type\n'.format(
                         lake_zone_field))
-                raise SystemExit()
+                sys.exit()
 
         ## For now, study area has to be a polygon
         if arcpy.Describe(study_area_orig_path).datasetType <> 'FeatureClass':
             logging.error(
                 '\nERROR: For now, study area must be a polygon shapefile')
-            raise SystemExit()
+            sys.exit()
 
 
         ## Build output folder if necessary

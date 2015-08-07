@@ -37,12 +37,12 @@ class HRUParameters():
         except IOError:
             logging.error(('\nERROR: Config file does not exist\n'+
                            '  {0}\n').format(field_list_path))
-            raise SystemExit()
+            sys.exit()
         except ConfigParser.MissingSectionHeaderError:
             logging.error('\nERROR: Config file is missing a section header\n'+
                           '    Please make sure the following line is at the '+
                           'beginning of the file\n[INPUTS]\n')
-            raise SystemExit()
+            sys.exit()
         except:
             logging.error(('\nERROR: Config file could not be read\n'+
                            '  {0}\n').format(config_path))
@@ -61,12 +61,12 @@ class HRUParameters():
         except IOError:
             logging.error(('\nERROR: Field list file does not exist\n'+
                            '  {0}\n').format(field_list_path))
-            raise SystemExit()
+            sys.exit()
         except ConfigParser.MissingSectionHeaderError:
             logging.error('\nERROR: Field list file is missing a section header\n'+
                           '    Please make sure the following line is at the '+
                           'beginning of the file\n[FIELDS]\n')
-            raise SystemExit()
+            sys.exit()
         except:
             logging.error(('\nERROR: Field list file could not be read\n'+
                            '  {0}\n').format(field_list_path))
@@ -90,10 +90,10 @@ class HRUParameters():
         ## Check inputs
         if self.cs <= 0:
             logging.error('\nERROR: Fishnet cellsize must be greater than 0')
-            raise SystemExit()
+            sys.exit()
         if self.buffer_cells < 0:
             logging.error('\nERROR: Buffer cells must be greater than 0')
-            raise SystemExit()
+            sys.exit()
 
         ##
         self.param_ws = inputs_cfg.get('INPUTS', 'parameter_folder')
@@ -382,23 +382,23 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         zs_stat_list = ['MEAN', 'MINIMUM', 'MAXIMUM', 'MEDIAN', 'MAJORITY', 'SUM']
         zs_field_list = arcpy.ListFields(polygon_path, zs_field)
         if zs_stat not in zs_stat_list:
-            raise SystemExit()
+            sys.exit()
         elif len(zs_field_list) == 0:
             logging.error(
                 '\nERROR: Zonal stats field {0} doesn\'t exist'.format(zs_field))
-            raise SystemExit()
+            sys.exit()
         
     ## Check that the shapefiles have a spatial reference
     if arcpy.Describe(polygon_path).spatialReference.name == 'Unknown':
         logging.error(
             '\nERROR: HRU centroids  is not projected (i.e. does not have a prj file)')
-        raise SystemExit()
+        sys.exit()
     if arcpy.Describe(point_path).spatialReference.name == 'Unknown':
         logging.error(
             '\nERROR: HRU centroids does not appear to be projected (or does not have a prj file)'+
             '\nERROR: Try deleting the centroids (i.e. "_label.shp") and '+
             'rerunning hru_parameters.py\n')
-        raise SystemExit()
+        sys.exit()
 
     ## Check that ORIG_FID is in point_path (HRU centroids)
     if len(arcpy.ListFields(point_path, hru_param.fid_field)) == 0:
@@ -406,13 +406,13 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
             ('\nERROR: HRU centroids does not have the field: {0}'+
              '\nERROR: Try deleting the centroids (i.e. "_label.shp") and '+
              'rerunning hru_parameters.py\n').format(hru_param.fid_field))
-        raise SystemExit()
+        sys.exit()
     ## Check for duplicate ORIG_FID values
     fid_list = [r[0] for r in arcpy.da.SearchCursor(point_path, [hru_param.fid_field])]
     if len(fid_list) != len(set(fid_list)):
         logging.error(
             ('\nERROR: There are duplicate {0} values\n').format(hru_param.fid_field))
-        raise SystemExit()
+        sys.exit()
         
     ## Create memory objects
     point_subset_path = os.path.join('in_memory', 'point_subset')
@@ -612,7 +612,7 @@ def get_ini_file(workspace, ini_re, function_str='function'):
         print '\nERROR: No suitable ini files were found'
         print 'ERROR: Please set input file when calling {0}'.format(function_str)
         print 'ERROR: For example: test.py test.ini\n'
-        raise SystemExit()
+        sys.exit()
     config_filename = os.path.basename(config_filepath)
     print '{0:<20s} {1}'.format('INI File Name:', config_filename)
     return config_filepath
@@ -638,7 +638,7 @@ def get_param(param_str, param_default, config, section='INPUTS'):
                 param_value = None
         else:
             logging.error('ERROR: Unknown Input Type: {0}'.format(param_type))
-            raise SystemExit()
+            sys.exit()
     except:
         param_value = param_default
         if param_type is str and param_value.upper() == 'NONE':
@@ -936,7 +936,7 @@ def remap_check(remap_path):
         logging.error(
             '\nERROR: ASCII remap file ({0}) does not exist\n'.format(
                 os.path.basename(remap_path)))
-        raise SystemExit()
+        sys.exit()
     
     ## Read in the remap
     with open(remap_path, 'r') as remap_f:
@@ -959,7 +959,7 @@ def remap_check(remap_path):
                     ('\nERROR: ASCII remap file ({0}) has pre-ArcGIS 10.2 '+
                      'comments (\*)\n  Try running the "convert_remap_arc10p2.py"'+
                      'script\n').format(os.path.basename(remap_path)))
-            raise SystemExit()
+            sys.exit()
 
     ## First check for final newline character
     save_flag = False

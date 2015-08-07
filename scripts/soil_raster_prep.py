@@ -49,7 +49,7 @@ def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'soil_prep_log.txt'
@@ -89,7 +89,7 @@ def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         ## All of the soil rasters must exist
         awc_orig_path = os.path.join(soil_orig_ws, awc_name)
         clay_pct_orig_path = os.path.join(soil_orig_ws, clay_pct_name)
@@ -103,34 +103,34 @@ def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
         ## Check that either the original or projected/clipped raster exists
         if not arcpy.Exists(awc_orig_path):
             logging.error('\nERROR: AWC raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if not arcpy.Exists(clay_pct_orig_path):
             logging.error('\nERROR: Clay raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if not arcpy.Exists(sand_pct_orig_path):
             logging.error('\nERROR: Sand raster does not exist')
-            raise SystemExit()
+            sys.exit()
         ##if not arcpy.Exists(silt_orig_path):
         ##    logging.error('\nERROR: Silt raster does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if ((calc_ssr2gw_rate_flag or calc_slowcoef_flag) and
         ##    not arcpy.Exists(ksat_orig_path)):
         if not arcpy.Exists(ksat_orig_path):
             logging.error('\nERROR: Ksat raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if clip_root_depth_flag and not arcpy.Exists(soil_depth_orig_path):
             logging.error('\nERROR: Soil depth raster does not exist')
-            raise SystemExit()
+            sys.exit()
 
         ## Check other inputs
         if soil_cs <= 0:
             logging.error('\nERROR: soil cellsize must be greater than 0')
-            raise SystemExit()
+            sys.exit()
         soil_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
         if soil_proj_method.upper() not in soil_proj_method_list:
             logging.error('\nERROR: Soil projection method must be: {0}'.format(
                 ', '.join(soil_proj_method_list)))
-            raise SystemExit()
+            sys.exit()
 
         ## Build output folder if necessary
         soil_temp_ws = os.path.join(hru.param_ws, 'soil_rasters')
@@ -151,7 +151,7 @@ def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
         ##    logging.error(
         ##        '\nERROR: Root depth raster does not exists'+
         ##        '\nERROR: Try re-running veg_parameters script\n')
-        ##    raise SystemExit()
+        ##    sys.exit()
 
 		
         ## Set ArcGIS environment variables

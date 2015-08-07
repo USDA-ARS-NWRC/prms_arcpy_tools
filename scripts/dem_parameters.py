@@ -48,7 +48,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
         logging.debug('\nReading Input File')
 
         ## Log DEBUG to file
@@ -123,16 +123,16 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         if not arcpy.Exists(hru.polygon_path):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist\n'.format(hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         ## Check that either the original DEM raster exists
         if not arcpy.Exists(dem_orig_path):
             logging.error(
                 '\nERROR: DEM ({0}) raster does not exist\n'.format(dem_orig_path))
-            raise SystemExit()
+            sys.exit()
         ## Check that remap folder is valid
         if not os.path.isdir(remap_ws):
             logging.error('\nERROR: Remap folder does not exist\n')
-            raise SystemExit()
+            sys.exit()
         ## Check that remap files exist
         ## Check remap files comment style
         aspect_remap_path = os.path.join(remap_ws, aspect_remap_name)
@@ -146,34 +146,34 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ##    logging.error(
         ##        '\nERROR: ASCII remap file ({0}) does not exist\n'.format(
         ##            os.path.basename(aspect_remap_path)))
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(temp_adj_remap_path):
         ##    logging.error(
         ##        '\nERROR: ASCII remap file ({0}) does not exist\n'.format(
         ##            os.path.basename(temp_adj_remap_path)))
-        ##    raise SystemExit()
+        ##    sys.exit()
         #### Check remap files comment style
         ##if '10.2' in arcpy.GetInstallInfo()['version']:
         ##    if remap_comment_check(aspect_remap_path):
         ##        logging.error(
         ##            ('\nERROR: ASCII remap file ({0}) has pre-ArcGIS 10.2 '+
         ##             'comments\n').format(os.path.basename(aspect_remap_path)))
-        ##        raise SystemExit()
+        ##        sys.exit()
         ##    if remap_comment_check(temp_adj_remap_path):
         ##        logging.error(
         ##            ('\nERROR: ASCII remap file ({0}) has pre-ArcGIS 10.2 '+
         ##             'comments\n').format(os.path.basename(temp_adj_remap_path)))
-        ##        raise SystemExit()
+        ##        sys.exit()
 
         ## Check other inputs
         if dem_cs <= 0:
             logging.error('\nERROR: DEM cellsize must be greater than 0')
-            raise SystemExit()
+            sys.exit()
         dem_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
         if dem_proj_method not in dem_proj_method_list:
             logging.error('\nERROR: DEM projection method must be: {0}'.format(
                 ', '.join(dem_proj_method_list)))
-            raise SystemExit()
+            sys.exit()
         if reset_dem_adj_flag:
             logging.warning('\nWARNING: All values in {0} will be overwritten'.format(
                 hru.dem_adj_field))
@@ -238,7 +238,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         if len(arcpy.ListFields(hru.polygon_path, dem_adj_copy_field)) == 0:
             logging.error('\nERROR: dem_adj_copy_field {0} does not exist\n'.format(
                 dem_adj_copy_field))
-            raise SystemExit()
+            sys.exit()
 
         ## Assume all DEM rasters will need to be rebuilt
         ## Check slope, aspect, and proejcted DEM rasters
@@ -288,7 +288,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: The linear unit of the projected/clipped DEM must'+
                 ' be meters or feet\n  {0}'.format(linear_unit))
-            raise SystemExit()
+            sys.exit()
         del dem_obj
 
         ## Calculate filled DEM, flow_dir, & flow_acc

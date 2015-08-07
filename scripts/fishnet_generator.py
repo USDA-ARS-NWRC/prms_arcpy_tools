@@ -48,7 +48,7 @@ def fishnet_func(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
         logging.debug('\nReading Input File')
 
         ## Log DEBUG to file
@@ -66,12 +66,12 @@ def fishnet_func(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Study area ({0}) does not exist'.format(
                     study_area_path))
-            raise SystemExit()
+            sys.exit()
 
         ## For now, study area has to be a polygon
         if arcpy.Describe(study_area_path).datasetType <> 'FeatureClass':
             logging.error('\nERROR: For now, study area must be a polygon shapefile')
-            raise SystemExit()           
+            sys.exit()           
 
         ## Build output folder if necessary
         fishnet_temp_ws = os.path.join(hru.param_ws, 'fishnet_temp')

@@ -49,7 +49,7 @@ def thickness_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'thickness_parameters_log.txt'
@@ -70,7 +70,7 @@ def thickness_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
 
         ## Set ArcGIS environment variables
         arcpy.CheckOutExtension('Spatial')

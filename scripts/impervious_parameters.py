@@ -48,7 +48,7 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'impervious_parameters_log.txt'
@@ -71,21 +71,21 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         ## Impervious raster must exist
         if not arcpy.Exists(imperv_orig_path):
             logging.error('\nERROR: Impervious raster does not exist')
-            raise SystemExit()
+            sys.exit()
         
         ## Check other inputs
         if imperv_cs <= 0:
             logging.error('\nERROR: soil cellsize must be greater than 0')
-            raise SystemExit()
+            sys.exit()
         imperv_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
         if imperv_proj_method.upper() not in imperv_proj_method_list:
             logging.error('\nERROR: Impervious projection method must be: {0}'.format(
                 ', '.join(imperv_proj_method_list)))
-            raise SystemExit()
+            sys.exit()
 
         ## Build output folder if necessary
         imperv_temp_ws = os.path.join(hru.param_ws, 'impervious_rasters')

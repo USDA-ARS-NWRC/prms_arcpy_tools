@@ -47,7 +47,7 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'veg_parameters_log.txt'
@@ -86,16 +86,16 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         ## Check that either the original vegetation raster exist
         if not arcpy.Exists(veg_cover_orig_path):
             logging.error(
                 '\nERROR: Vegetation cover raster does not exist')
-            raise SystemExit()
+            sys.exit()
         if not arcpy.Exists(veg_type_orig_path):
             logging.error(
                 '\nERROR: Vegetation type raster does not exist')
-            raise SystemExit()
+            sys.exit()
         ## Vegetation cover can be set from another field in the raster
         ## This is mostly for US_120EVT
         if not veg_type_field:
@@ -115,7 +115,7 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ## Check that remap folder is valid
         if not os.path.isdir(remap_ws):
             logging.error('\nERROR: Remap folder does not exist')
-            raise SystemExit()
+            sys.exit()
         ## Check that remap files exist
         ## Check remap files comment style
         cov_type_remap_path = os.path.join(remap_ws, cov_type_remap_name)
@@ -135,33 +135,33 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ## DEADBEEF
         ##if not os.path.isfile(cov_type_remap_path):
         ##    logging.error('\nERROR: Cover type remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(covden_sum_remap_path):
         ##    logging.error('\nERROR: Summer cover density remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(covden_win_remap_path):
         ##    logging.error('\nERROR: Winter cover density remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(snow_intcp_remap_path):
         ##    logging.error('\nERROR: Winter snow interception remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(srain_intcp_remap_path):
         ##    logging.error('\nERROR: Summer rain interception remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(wrain_intcp_remap_path):
         ##    logging.error('\nERROR: Winter rain interception remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
         ##if not os.path.isfile(root_depth_remap_path):
         ##    logging.error('\nERROR: Root depth remap file does not exist')
-        ##    raise SystemExit()
+        ##    sys.exit()
 
         ## Check other inputs
         if veg_type_cs <= 0:
             logging.error('\nERROR: Veg. type cellsize must be greater than 0')
-            raise SystemExit()
+            sys.exit()
         if veg_cover_cs <= 0:
             logging.error('\nERROR: Veg. cover cellsize must be greater than 0')
-            raise SystemExit()
+            sys.exit()
 
         ## Build output folders if necesssary
         veg_temp_ws = os.path.join(hru.param_ws, 'veg_rasters')

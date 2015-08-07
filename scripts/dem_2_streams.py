@@ -53,7 +53,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
         logging.debug('\nReading Input File')
 
         ## Log DEBUG to file
@@ -113,7 +113,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         if lake_seg_offset < 0:
             logging.error(
                 '\nERROR: lake_seg_offset must be an integer greater than 0')
-            raise SystemExit()
+            sys.exit()
 
         ## Check input paths
         dem_temp_ws = os.path.join(hru.param_ws, 'dem_rasters')
@@ -122,11 +122,11 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 ('\nERROR: Projected/clipped DEM ({0}) does not exist'+
                 '\nERROR: Try rerunning dem_parameters.py').format(dem_path))
-            raise SystemExit()
+            sys.exit()
         if not arcpy.Exists(hru.polygon_path):
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
 
         ## Check subbasin_points
         logging.info('\nChecking input subbasin shapefile')
@@ -134,12 +134,12 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 ('\nERROR: Subbasin points shapefiles does not exist'+
                  '\nERROR:   {0}').format(subbasin_input_path))
-            raise SystemExit()
+            sys.exit()
         ## subbasin_zone_path must be a point shapefile
         elif arcpy.Describe(subbasin_input_path).datasetType <> 'FeatureClass':
             logging.error(
                 '\nERROR: subbasin_input_path must be a point shapefile')
-            raise SystemExit()
+            sys.exit()
         ## Check subbasin_zone_fields
         if subbasin_zone_field.upper() in ['', 'FID', 'NONE']:
             subbasin_fid_field = arcpy.Describe(subbasin_input_path).OIDFieldName
@@ -156,7 +156,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: subbasin_zone_field {0} does not exist\n'.format(
                     subbasin_zone_field))
-            raise SystemExit()
+            sys.exit()
         ## Need to check that subbasin_zone_field is an int type
         elif not [f.type for f in arcpy.Describe(subbasin_input_path).fields
                   if (f.name == subbasin_zone_field and
@@ -164,14 +164,14 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 '\nERROR: subbasin_zone_field {0} must be an integer type\n'.format(
                     subbasin_zone_field))
-            raise SystemExit()
+            sys.exit()
         ## Need to check that subbasin_zone_field is all positive values
         if min([row[0] for row in arcpy.da.SearchCursor(
             subbasin_input_path, [subbasin_zone_field])]) <= 0:
             logging.error(
                 '\nERROR: subbasin_zone_field values must be positive\n'.format(
                     subbasin_zone_field))
-            raise SystemExit()
+            sys.exit()
 
         ## Build output folder if necessary
         flow_temp_ws = os.path.join(hru.param_ws, 'flow_rasters')
@@ -228,7 +228,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ##if len(arcpy.ListFields(hru.polygon_path, dem_adj_copy_field)) == 0:
         ##    logging.error('\nERROR: dem_adj_copy_field {0} does not exist\n'.format(
         ##        dem_adj_copy_field))
-        ##    raise SystemExit()
+        ##    sys.exit()
         ## Reset DEM_ADJ
         ##if reset_dem_adj_flag:
         ##    logging.info('\nResetting {0} to {1}'.format(
@@ -416,7 +416,7 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
             logging.error(
                 ('\nERROR: SUB_BASINs must be sequential starting from 1'+
                  '\nERROR:   {0}').format(subbasin_id_list))
-            raise SystemExit()
+            sys.exit()
         subbasin_input_count = len(subbasin_id_list)
         logging.debug('  {} subbasins'.format(subbasin_input_count))
         ## Get spatial reference of subbasin_points

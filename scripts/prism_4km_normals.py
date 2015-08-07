@@ -53,7 +53,7 @@ def prism_km_parameters(config_path, data_name='ALL',
             logging.error('\nERROR: Config file could not be read, '+
                           'is not an input file, or does not exist\n'+
                           'ERROR: config_file = {0}\n').format(config_path)
-            raise SystemExit()
+            sys.exit()
 
         ## Log DEBUG to file
         log_file_name = 'prism_4km_normals_log.txt'
@@ -76,24 +76,24 @@ def prism_km_parameters(config_path, data_name='ALL',
             logging.error(
                 '\nERROR: Fishnet ({0}) does not exist'.format(
                     hru.polygon_path))
-            raise SystemExit()
+            sys.exit()
         ## Check that PRISM folder is valid
         if not os.path.isdir(prism_ws):
             logging.error(
                 '\nERROR: PRISM folder ({0}) does not exist'.format(prism_ws))
-            raise SystemExit()
+            sys.exit()
         proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
         if prism_proj_method.upper() not in proj_method_list:
             logging.error('\nERROR: PRISM projection method must be: {0}'.format(
                 ', '.join(proj_method_list)))
-            raise SystemExit()
+            sys.exit()
         logging.debug('  Projection method:    {0}'.format(
             prism_proj_method.upper()))      
 
         ## Check other inputs
         if prism_cs <= 0:
             logging.error('\nERROR: PRISM cellsize must be greater than 0\n')
-            raise SystemExit()
+            sys.exit()
 
         ## Set ArcGIS environment variables
         arcpy.CheckOutExtension('Spatial')
@@ -144,14 +144,14 @@ def prism_km_parameters(config_path, data_name='ALL',
                      'and folder are for the same resolution '+
                      '(800m vs 4km)\n\n').format(prism_normal_re.pattern))
                 logging.error()
-                raise SystemExit()
+                sys.exit()
 
             ## PRISM input data workspace
             ##input_ws = os.path.join(prism_ws, data_name.lower())
             ##if not os.path.isdir(input_ws):
             ##    logging.error('\nERROR: The PRISM {0} folder does not exist'.format(
             ##        data_name.lower()))
-            ##    raise SystemExit()
+            ##    sys.exit()
 
             ## PRISM output data workspace
             output_ws = os.path.join(
