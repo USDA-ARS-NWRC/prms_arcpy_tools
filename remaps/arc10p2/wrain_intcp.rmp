@@ -46,6 +46,7 @@
 3052 : 3
 3053 : 3
 3054 : 4
+3055 : 3
 3056 : 3
 3057 : 4
 3058 : 3
@@ -666,10 +667,11 @@
 # 3048 - Northwestern Great Plains Highland White Spruce Woodland
 # 3049 - Rocky Mountain Foothill Limber Pine-Juniper Woodland
 # 3050 - Rocky Mountain Lodgepole Pine Forest
-# 3051 - Southern Rocky Mountain Dry-Mesic Montane Mixed Conifer Forest and Woo
-# 3052 - Southern Rocky Mountain Mesic Montane Mixed Conifer Forest and Woodlan
+# 3051 - Southern Rocky Mountain Dry-Mesic Montane Mixed Conifer Forest and Wo
+# 3052 - Southern Rocky Mountain Mesic Montane Mixed Conifer Forest and Woodla
 # 3053 - Northern Rocky Mountain Ponderosa Pine Woodland and Savanna
 # 3054 - Southern Rocky Mountain Ponderosa Pine Woodland
+# 3055 - Rocky Mountain Subalpine Dry-Mesic Spruce-Fir Forest and Woodland
 # 3056 - Rocky Mountain Subalpine Mesic-Wet Spruce-Fir Forest and Woodland
 # 3057 - Rocky Mountain Subalpine-Montane Limber-Bristlecone Pine Woodland
 # 3058 - Sierra Nevada Subalpine Lodgepole Pine Forest and Woodland
@@ -682,7 +684,7 @@
 # 3065 - Columbia Plateau Scabland Shrubland
 # 3066 - Inter-Mountain Basins Mat Saltbush Shrubland
 # 3067 - Mediterranean CA Alpine Fell-Field
-# 3068 - North Pacific Dry and Mesic Alpine Dwarf-Shrubland or Fell-field or Me
+# 3068 - North Pacific Dry and Mesic Alpine Dwarf-Shrubland or Fell-field or M
 # 3070 - Rocky Mountain Alpine Dwarf-Shrubland
 # 3071 - Sierra Nevada Alpine Dwarf-Shrubland
 # 3072 - Wyoming Basins Dwarf Sagebrush Shrubland and Steppe
@@ -786,7 +788,7 @@
 # 3174 - North Pacific Dry-Mesic Silver Fir-Western Hemlock-Douglas-fir Forest
 # 3177 - CA Coastal Closed-Cone Conifer Forest and Woodland
 # 3178 - North Pacific Hypermaritime Western Red-cedar-Western Hemlock Forest
-# 3179 - Northwestern Great Plains-Black Hills Ponderosa Pine Woodland and Sava
+# 3179 - Northwestern Great Plains-Black Hills Ponderosa Pine Woodland and Sav
 # 3180 - Introduced Riparian Forest and Woodland
 # 3181 - Introduced Upland Vegetation-Annual Grassland
 # 3182 - Introduced Upland Vegetation-Perennial Grassland and Forbland
@@ -859,7 +861,7 @@
 # 3258 - North American Warm Desert Riparian Herbaceous
 # 3259 - Introduced Riparian Shrubland
 # 3260 - Mediterranean CA Lower Montane Black Oak Forest and Woodland
-# 3261 - Mediterranean CA Lower Montane Black Oak - Conifer Forest and Woodland
+# 3261 - Mediterranean CA Lower Montane Black Oak Conifer Forest and Woodland
 # 3262 - East Cascades Oak Forest and Woodland
 # 3263 - East Cascades Oak - Ponderosa Pine Forest and Woodland
 # 3264 - CA Lower Montane Blue Oak Forest and Woodland
@@ -937,7 +939,7 @@
 # 3336 - Southwest Florida Coastal Strand and Maritime Hammock
 # 3337 - Southeast Florida Coastal Strand and Maritime Hammock
 # 3338 - Central and South Texas Coastal Fringe Forest and Woodland
-# 3339 - West Gulf Coastal Plain Chenier and Upper Texas Coastal Fringe Forest 
+# 3339 - West Gulf Coastal Plain Chenier and Upper TX Coastal Fringe Forest
 # 3340 - Appalachian Shale Barrens
 # 3342 - Piedmont Hardpan Woodland and Forest
 # 3343 - Southern Atlantic Coastal Plain Mesic Hardwood Forest
@@ -1036,7 +1038,7 @@
 # 3446 - South Florida Pine Flatwoods
 # 3447 - South Florida Cypress Dome
 # 3448 - Southern Piedmont Dry Oak-Pine Forest
-# 3449 - Central Atlantic Coastal Plain Wet Longleaf Pine Savanna and Flatwoods
+# 3449 - Central Atlantic Coastal Plain Wet Longleaf Pine Savanna and Flatwood
 # 3450 - Southern Atlantic Coastal Plain Wet Pine Savanna and Flatwoods
 # 3451 - West Gulf Coastal Plain Wet Longleaf Pine Savanna and Flatwoods
 # 3452 - Atlantic Coastal Plain Peatland Pocosin and Canebrake Woodland
@@ -1083,7 +1085,7 @@
 # 3497 - Central Interior and Appalachian Sparsely Vegetated Systems
 # 3498 - Gulf and Atlantic Coastal Plain Sparsely Vegetated Systems
 # 3499 - Laurentian-Acadian Sparsely Vegetated Systems
-# 3501 - Southern Atlantic Coastal Plain Nonriverine Swamp and Wet Hardwood For
+# 3501 - Southern Atlantic Coastal Plain Nonriverine Swamp and Wet Hardwood Fo
 # 3502 - Central Appalachian Dry Oak-Pine Forest
 # 3503 - Chihuahuan Loamy Plains Desert Grassland
 # 3504 - Chihuahuan-Sonoran Desert Bottomland and Swale Grassland
@@ -1108,8 +1110,8 @@
 # 3531 - Ruderal Upland Forest
 # 3532 - Ruderal Forest-Northern and Central Hardwood and Conifer
 # 3533 - Ruderal Forest-Southeast Hardwood and Conifer
-# 3534 - Managed Tree Plantation-Northern and Central Hardwood and Conifer Plan
-# 3535 - Managed Tree Plantation-Southeast Conifer and Hardwood Plantation Grou
+# 3534 - Managed Tree Plantation-Northern and Central Hardwood and Conifer Pla
+# 3535 - Managed Tree Plantation-Southeast Conifer and Hardwood Plantation Gro
 # 3536 - Introduced Wetland Vegetation-Tree
 # 3538 - Introduced Wetland Vegetation-Herbaceous
 # 3539 - Modified/Managed Northern Tallgrass Grassland
@@ -1134,7 +1136,7 @@
 # 3566 - Florida Dry Prairie Shruband
 # 3567 - Southern Coastal Plain Blackland Prairie Woodland
 # 3568 - East Gulf Coastal Plain Jackson Prairie Woodland
-# 3569 - Central Atlantic Coastal Plain Wet Longleaf Pine Savanna and Shrubland
+# 3569 - Central Atlantic Coastal Plain Wet Longleaf Pine Savanna and Shrublan
 # 3570 - Southern Coastal Plain Nonriverine Cypress Dome Herbaceous
 # 3571 - Southern Coastal Plain Seepage Swamp and Baygall Shrubland
 # 3572 - South Florida Cypress Dome Herbaceous
@@ -1152,7 +1154,7 @@
 # 3584 - West Gulf Coastal Plain Hardwood Forest
 # 3585 - West Gulf Coastal Plain Pine-Hardwood Forest
 # 3586 - West Gulf Coastal Plain Sandhill Oak Forest and Woodland
-# 3587 - West Gulf Coastal Plain Sandhill Oak and Shortleaf Pine Forest and Woo
+# 3587 - West Gulf Coastal Plain Sandhill Oak and Shortleaf Pine Forest and Wo
 # 3588 - East Gulf Coastal Plain Southern Hardwood Flatwoods
 # 3589 - East Gulf Coastal Plain Southern Loblolly-Hardwood Flatwoods
 # 3590 - West Gulf Coastal Plain Hardwood Flatwoods
