@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW parameter support functions
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-08-07
 # Python:       2.7
 #--------------------------------
 
@@ -964,6 +964,7 @@ def remap_check(remap_path):
     ## First check for final newline character
     save_flag = False
     if remap_lines and remap_lines[-1] and remap_lines[-1].endswith('\n'):
+        logging.debug('  Final newline character')
         save_flag = True
 
     ## Then remove empty lines and strip white space and newline characters
@@ -971,18 +972,21 @@ def remap_check(remap_path):
     remap_lines = [l.strip() for l in remap_lines]
     remap_lines = [l for l in remap_lines if l]
     if len(remap_lines) <> line_count:
+        logging.debug('  Whitespace or empty lines')
         save_flag = True
 
     ## Trim comments longer than 80 characters
     if arcpy.GetInstallInfo()['Version'].startswith('10.2'):
-        remap_lines = [l[:79] if "#" in l else l for l in remap_lines]
-        save_flag = True
+        if any([len(l) > 80 for l in remap_lines if "#" in l]):
+            remap_lines = [l[:79] if "#" in l else l for l in remap_lines]
+            logging.debug('  Lines longer than 80 characters')
+            save_flag = True
 
     ## If lines were removed, resave the filtered remap file
     if save_flag:
         logging.warning(
-            ('\nWARNING: The ASCII remap file ({0}) had empty lines that will '+
-             'be removed\n').format(os.path.basename(remap_path)))
+            '  The ASCII remap file ({0}) will be overwritten'.format(
+                os.path.basename(remap_path)))
         with open(remap_path, 'w') as remap_f:
             for i, line in enumerate(remap_lines):
                 ## Don't write newline character on last line
