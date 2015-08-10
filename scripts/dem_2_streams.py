@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW Flow Parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-16
+# Created       2015-08-10
 # Python:       2.7
 #--------------------------------
 
@@ -643,13 +643,16 @@ def flow_parameters(config_path, overwrite_flag=False, debug_flag=False):
         basin_obj.save(basin_path)
         del basin_obj
 
-
         ## Clear subbasin value if HRU_TYPE_IN is 0
         logging.info('Clearing subbasin ID for inactive cells')
         subbasin_obj = SetNull(
-            Raster(hru_type_path), Raster(subbasin_path), "VALUE=0")
+            hru_type_in_obj, Raster(subbasin_path), "VALUE=0")
         subbasin_obj.save(subbasin_path)
         del subbasin_obj
+
+        ## Save HRU_TYPE_IN directly to HRU_TYPE
+        hru_type_in_obj.save(hru_type_path)
+        del hru_type_in_obj
 
         #### DEADBEEF
         #### Instead of clearing HRU_TYPE if no subbasin, try to keep all edge
