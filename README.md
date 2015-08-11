@@ -3,7 +3,7 @@ gsflow-arcpy-tools
 
 Series of Python/ArcPy (ArcGIS) scripts for developing inputs for a GSFLOW model.
 
-#####Script Execution Order
+###Script Execution Order
 - fishnet_generator.py 
 - hru_parameters.py 
 - dem_parameters.py 
@@ -19,7 +19,7 @@ Series of Python/ArcPy (ArcGIS) scripts for developing inputs for a GSFLOW model
 - stream_parameters.py 
 - prms_template_fill.py 
 
-####Ancillary Data
+###Ancillary Data
 Almost all of the following data can be downloaded for a study area using the [USGS Geospatial Data Gateway](http://datagateway.nrcs.usda.gov/).  They could probably also be downloaded using the [National Map Viewer](http://viewer.nationalmap.gov/viewer/), but I haven't tried this.  Specific download instructions are provided for each dataset below.
 #####Elevation
 Elevation data is set using the 10m (1/3 arc-second) or 30m (1 arc-second) National Elevation Dataset (NED) rasters.  These can be easily downloaded in 1x1 degree tiles for the CONUS from the [USGS FTP](rockyftp.cr.usgs.gov) in the folder vdelivery/Datasets/Staged/Elevation.
@@ -37,15 +37,13 @@ Example ASCII remap files are provided, although it may be necessary to modify t
 
 ###Example
 Create the project folder if necessary (i.e. D:\Projects\sagehen) and create an hru_params sub-folder (i.e. D:\Projects\sagehen\hru_params).
-####Clone the repository
+#####Clone the repository
 If you already have a local repository of the gsflow-arcpy-tools, pull the latest version from GitHub.  If you don't already have a local repository, either clone the repository locally or download a zip file of the scripts from Github.  For this example, the local copy will be cloned directly in the project folder (i.e. D:\Projects\sagehen\scripts and D:\Projects\sagehen\remaps)
-####Study Area
-Create a "shapefiles" sub-folder (i.e. D:\Projects\sagehen\shapefiles).
-Place the study area shapefile in the shapefiles sub-folder  (ie.e. D:\Projects\sagehen\shapefiles\watershed.shp).  The study area is typically a single watershed (like a HUC8) or a collection of watersheds that will be modeled together.  Check the projection of the study area shapefile and make sure it is in a projected coordinate system (like NAD83 UTM Zone 10N).
+#####Study Area
+Create a "shapefiles" sub-folder (i.e. D:\Projects\sagehen\shapefiles).  Place the study area shapefile in the shapefiles sub-folder (i.e. D:\Projects\sagehen\shapefiles\watershed.shp).  The study area is typically a single watershed (like a HUC8) or a collection of watersheds that will be modeled together.  Check the projection of the study area shapefile and make sure it is in a projected coordinate system (like NAD83 UTM Zone 10N).
 #####Input File
-Copy the template input file (scripts\template_parameters.ini) to the hru_params folder and rename (i.e. D:\Projects\sagehen\hru_params\example_params.ini)
-Within the input file, all of the file and folder paths need to be set to the project folder.  A simple find and replace of "D:\Projects\gsflow-arcpy-example" to your project folder (i.e. "D:\Projects\sagehen") should work, but doublecheck all of the paths.  Eventually, all of the paths will be set as relative paths to the main project folder, but for now they must be absolute paths.
-##### Fishnet / Model Grid
+Copy the template input file (scripts\template_parameters.ini) to the hru_params folder and rename (i.e. D:\Projects\sagehen\hru_params\example_params.ini).  Within the input file, all of the file and folder paths need to be set to the project folder.  A simple find and replace of "D:\Projects\gsflow-arcpy-example" to your project folder (i.e. "D:\Projects\sagehen") should work, but doublecheck all of the paths.  Eventually, the scripts will be modified so that the paths will be set as relative paths to the main project folder, but for now they must be absolute paths.
+######Fishnet / Model Grid
 The following parameters must be explicitly set whether you are building a new fishnet/grid shapefile or reading in an existing one.  If reading an existing grid, the paramters must match the grid properties exactly.  
 - hru_cellsize - cellsize (units will depend on projection)
 - hru_ref_x: snap x coordinate (units will depend on projection, 0 is a good choice for a new grid)
