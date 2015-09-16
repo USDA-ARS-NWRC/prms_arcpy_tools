@@ -93,31 +93,44 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
                     '\nERROR: ppt_obs_list (mean monthly precipitation) '+
                     'values could not be parsed as floats')
                 sys.exit()
+
             ## Check that there are 12 values
             if len(ppt_obs_list) <> 12:
                 logging.error(
                     '\nERROR: There must be exactly 12 mean monthly '+
                     'observed precipitation values based to ppt_obs_list')
                 sys.exit()
+
             ## Check that HRU_ID is valid
             logging.info('  PPT HRU_ID: {0}'.format(ppt_hru_id))
-            if ppt_hru_id in [int(row[0]) for row in sorted(
-                arcpy.da.SearchCursor(hru.polygon_path, [hru.id_field]))]:
-                logging.error(
-                    ('\nERROR: ppt_ratios will not be forced to 1'+
-                     ' at cell {0}').format(ppt_hru_id))
-            elif ppt_hru_id == 0:
+            arcpy.MakeTableView_management(
+                hru.polygon_path, "test_layer",
+                "{0} = {1}".format(hru.id_field, ppt_hru_id))
+            if ppt_hru_id == 0:
                 logging.info(
                     '    Assuming ppt_ratios should not be forced to 1 at a cell')
-            else:
+            elif int(arcpy.GetCount_management("test_layer").getOutput(0)) == 0:
+                logging.error(
+                    ('\nERROR: ppt_hru_id {0} is not a valid cell hru_id'+
+                     '\nERROR: ppt_ratios will not be forced to 1'+
+                     ' at cell {0}\n').format(ppt_hru_id))
                 ppt_hru_id = 0
-                logging.warning(
-                    '\nWARNING: The ppt_hru_id appears to be invalid...'+
-                    '\nWARNING: The ppt_ratios will not be forced to 1 at a cell')
+            ##if ppt_hru_id in [int(row[0]) for row in sorted(
+            ##    arcpy.da.SearchCursor(hru.polygon_path, [hru.id_field]))]:
+            ##    logging.error(
+            ##        ('\nERROR: ppt_ratios will not be forced to 1'+
+            ##         ' at cell {0}').format(ppt_hru_id))
+            ##else:
+            ##    ppt_hru_id = 0
+            ##    logging.warning(
+            ##        '\nWARNING: The ppt_hru_id appears to be invalid...'+
+            ##        '\nWARNING: The ppt_ratios will not be forced to 1 at a cell')
+            arcpy.Delete_management("test_layer")
             logging.info(
                 ('  Observed Mean Monthly PPT ({0}):\n    {1}\n    (Script '+
                  'will assume these are listed in month order, i.e. Jan, '+
                  'Feb, ...)').format(ppt_obs_units, ppt_obs_list))
+
             ## Convert units while reading obs values
             if ppt_obs_units == 'mm':
                 factor = 1
