@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW PRISM parameters from default 400m normals 
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-09-17
 # Python:       2.7
 #--------------------------------
 
@@ -16,7 +16,6 @@ import multiprocessing
 import os
 import re
 import sys
-##import tempfile
 from time import clock
 
 import arcpy
@@ -24,7 +23,7 @@ from arcpy import env
 from arcpy.sa import *
 import numpy as np
 
-from support_functions import *
+import support_functions
 
 ################################################################################
 
@@ -43,7 +42,7 @@ def prism_800m_parameters(config_path, data_name='ALL',
 
     try:
         ## Initialize hru_parameters class
-        hru = HRUParameters(config_path)
+        hru = support_functions.HRUParameters(config_path)
 
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()
@@ -116,7 +115,7 @@ def prism_800m_parameters(config_path, data_name='ALL',
         logging.info('\nAdding PRISM fields if necessary')
         for data_name in data_name_list:
             for month in month_list:
-                add_field_func(
+                support_functions.add_field_func(
                     hru.polygon_path, '{0}_{1}'.format(data_name, month), 'DOUBLE')
             
         ## Process each PRISM data type
@@ -140,7 +139,7 @@ def prism_800m_parameters(config_path, data_name='ALL',
             if not input_raster_dict:
                 logging.error(
                     ('\nERROR: No PRISM rasters were found matching the '+
-                     'following pattern:\n\n  {0}\nDouble check that the script '+
+                     'following pattern:\n  {0}\n\nDouble check that the script '+
                      'and folder are for the same resolution '+
                      '(800m vs 4km)\n\n').format(prism_normal_re.pattern))
                 logging.error()
@@ -155,7 +154,7 @@ def prism_800m_parameters(config_path, data_name='ALL',
 
             ## PRISM output data workspace
             output_ws = os.path.join(
-                hru.param_ws, data_name.lower()+'_rasters')
+                hru.param_ws, data_name.lower() + '_rasters')
             if not os.path.isdir(output_ws):
                 os.mkdir(output_ws)
 
@@ -163,6 +162,7 @@ def prism_800m_parameters(config_path, data_name='ALL',
             logging.info('  Removing existing PRISM files')
             for item in os.listdir(output_ws):
                 if prism_normal_re.match(item):
+                ##if prism_normal_re.match(item) and overwrite_flag:
                     os.remove(os.path.join(output_ws, item))
 
             ## Extract, project/resample, clip
@@ -183,16 +183,16 @@ def prism_800m_parameters(config_path, data_name='ALL',
 
                 ## Set preferred transforms
                 input_sr = Raster(input_raster).spatialReference
-                transform_str = transform_func(hru.sr, input_sr)
+                transform_str = support_functions.transform_func(hru.sr, input_sr)
                 if transform_str:
                     logging.debug('  Transform: {0}'.format(transform_str))
 
                 ## Project PRISM rasters to HRU coordinate system
                 ## DEADBEEF - Arc10.2 ProjectRaster does not extent
-                project_raster_func(
-                    input_raster, output_raster, hru.sr,
-                    prism_proj_method.upper(), prism_cs, transform_str,
-                    '{0} {1}'.format(hru.ref_x, hru.ref_y), input_sr, hru)
+##                support_functions.project_raster_func(
+##                    input_raster, output_raster, hru.sr,
+##                    prism_proj_method.upper(), prism_cs, transform_str,
+##                    '{0} {1}'.format(hru.ref_x, hru.ref_y), input_sr, hru)
                 ##arcpy.ProjectRaster_management(
                 ##    input_raster, output_raster, hru.sr,
                 ##    prism_proj_method.upper(), prism_cs, transform_str,
@@ -212,7 +212,8 @@ def prism_800m_parameters(config_path, data_name='ALL',
 
             ## Calculate zonal statistics
             logging.info('\nCalculating PRISM zonal statistics')
-            zonal_stats_func(zs_prism_dict, hru.polygon_path, hru.point_path, hru)
+            support_functions.zonal_stats_func(
+                zs_prism_dict, hru.polygon_path, hru.point_path, hru)
             del zs_prism_dict
         
         ## Jensen-Haise Potential ET air temperature coefficient
@@ -240,11 +241,10 @@ def prism_800m_parameters(config_path, data_name='ALL',
     finally:
         try: arcpy.CheckInExtension('Spatial')
         except: pass
-        ##arcpy.ResetEnvironments()
 
 ################################################################################
 
-if __name__ == '__main__':
+def arg_parse():
     parser = argparse.ArgumentParser(
         description='PRISM 800m Normals',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -261,23 +261,22 @@ if __name__ == '__main__':
         '--debug', default=logging.INFO, const=logging.DEBUG,
         help='Debug level logging', action="store_const", dest="loglevel")
     args = parser.parse_args()
-
-    ## Create Basic Logger
-    logging.basicConfig(level=args.loglevel, format='%(message)s')
-
-    ## Run Information
-    logging.info('\n{0}'.format('#'*80))
-    log_f = '{0:<20s} {1}'
-    logging.info(log_f.format(
-        'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
-    logging.info(log_f.format('Current Directory:', os.getcwd()))
-    logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
-
-    ## Convert input file to an absolute path
+    
+    ## Convert relative paths to absolute paths
     if os.path.isfile(os.path.abspath(args.ini)):
         args.ini = os.path.abspath(args.ini)
+    return args
 
-    ## Calculate GSFLOW PRISM Parameters
+################################################################################
+if __name__ == '__main__':
+    args = arg_parse()
+
+    logging.basicConfig(level=args.loglevel, format='%(message)s')
+    logging.info('\n{0}'.format('#'*80))
+    logging.info('{0:<20s} {1}'.format('Run Time Stamp:', dt.datetime.now().isoformat(' ')))
+    logging.info('{0:<20s} {1}'.format('Current Directory:', os.getcwd()))
+    logging.info('{0:<20s} {1}'.format('Script:', os.path.basename(sys.argv[0])))
+
     prism_800m_parameters(
         config_path=args.ini, data_name=args.type, 
         overwrite_flag=args.overwrite,

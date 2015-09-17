@@ -3,7 +3,7 @@
 # Purpose:      GSFLOW PPT ratio parameters
 # Notes:        ArcGIS 10.2 Version
 # Author:       Charles Morton
-# Created       2015-07-09
+# Created       2015-09-17
 # Python:       2.7
 #--------------------------------
 
@@ -16,7 +16,6 @@ import multiprocessing
 import os
 import re
 import sys
-##import tempfile
 from time import clock
 
 import arcpy
@@ -24,7 +23,7 @@ from arcpy import env
 from arcpy.sa import *
 import numpy as np
 
-from support_functions import *
+import support_functions
 
 ################################################################################
 
@@ -41,7 +40,7 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     try:
         ## Initialize hru_parameters class
-        hru = HRUParameters(config_path)
+        hru = support_functions.HRUParameters(config_path)
 
         ## Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()
@@ -115,16 +114,6 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
                      '\nERROR: ppt_ratios will not be forced to 1'+
                      ' at cell {0}\n').format(ppt_hru_id))
                 ppt_hru_id = 0
-            ##if ppt_hru_id in [int(row[0]) for row in sorted(
-            ##    arcpy.da.SearchCursor(hru.polygon_path, [hru.id_field]))]:
-            ##    logging.error(
-            ##        ('\nERROR: ppt_ratios will not be forced to 1'+
-            ##         ' at cell {0}').format(ppt_hru_id))
-            ##else:
-            ##    ppt_hru_id = 0
-            ##    logging.warning(
-            ##        '\nWARNING: The ppt_hru_id appears to be invalid...'+
-            ##        '\nWARNING: The ppt_ratios will not be forced to 1 at a cell')
             arcpy.Delete_management("test_layer")
             logging.info(
                 ('  Observed Mean Monthly PPT ({0}):\n    {1}\n    (Script '+
@@ -217,10 +206,10 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
         ## Check fields
         logging.info('\nAdding PRISM fields if necessary')
         ## PPT zone fields
-        add_field_func(hru.polygon_path, hru.ppt_zone_id_field, 'LONG')
+        support_functions.add_field_func(hru.polygon_path, hru.ppt_zone_id_field, 'LONG')
         ## PPT ratio fields
         for ppt_field in ppt_field_list:
-            add_field_func(hru.polygon_path, ppt_field, 'DOUBLE')
+            support_functions.add_field_func(hru.polygon_path, ppt_field, 'DOUBLE')
 
         ## Calculate PPT zone ID
         if set_ppt_zones_flag:
@@ -243,7 +232,7 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
             if hru.sr.name <> ppt_zone_sr.name:
                 logging.info('  Projecting PPT zones...')
                 ## Set preferred transforms
-                transform_str = transform_func(hru.sr, ppt_zone_sr)
+                transform_str = support_functions.transform_func(hru.sr, ppt_zone_sr)
                 logging.debug('    Transform: {0}'.format(transform_str))
                 ## Project ppt_zone shapefile
                 arcpy.Project_management(
@@ -355,11 +344,10 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
     finally:
         try: arcpy.CheckInExtension('Spatial')
         except: pass
-        ##arcpy.ResetEnvironments()
 
 ################################################################################
 
-if __name__ == '__main__':
+def arg_parse():
     parser = argparse.ArgumentParser(
         description='PRISM Precipitation Ratio Parameters',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -374,20 +362,21 @@ if __name__ == '__main__':
         help='Debug level logging', action="store_const", dest="loglevel")
     args = parser.parse_args()
 
-    ## Create Basic Logger
-    logging.basicConfig(level=args.loglevel, format='%(message)s')
-
-    ## Run Information
-    logging.info('\n{0}'.format('#'*80))
-    log_f = '{0:<20s} {1}'
-    logging.info(log_f.format(
-        'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
-    logging.info(log_f.format('Current Directory:', os.getcwd()))
-    logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
-
-    ## Convert input file to an absolute path
+    ## Convert relative paths to absolute path
     if os.path.isfile(os.path.abspath(args.ini)):
         args.ini = os.path.abspath(args.ini)
+    return args
+
+################################################################################
+
+if __name__ == '__main__':
+    args = arg_parse()
+
+    logging.basicConfig(level=args.loglevel, format='%(message)s')
+    logging.info('\n{0}'.format('#'*80))
+    logging.info(log_f.format('Run Time Stamp:', dt.datetime.now().isoformat(' ')))
+    logging.info('{0:<20s} {1}'.format('Current Directory:', os.getcwd()))
+    logging.info('{0:<20s} {1}'.format('Script:', os.path.basename(sys.argv[0])))
 
     ## Calculate GSFLOW PPT Ratio Parameters
     ppt_ratio_parameters(
