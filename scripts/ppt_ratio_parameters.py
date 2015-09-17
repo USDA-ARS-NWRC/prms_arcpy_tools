@@ -62,7 +62,7 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
         logging.info('\nGSFLOW PPT Ratio Parameters')
 
         ## Units
-        ppt_obs_units = get_param('ppt_obs_units', 'mm', inputs_cfg).lower()
+        ppt_obs_units = support_functions.get_param('ppt_obs_units', 'mm', inputs_cfg).lower()
         ppt_units_list = ['mm', 'cm', 'm', 'in', 'ft']
         ## Compare against the upper case of the values in the list
         ##   but don't modify the acceptable units list
@@ -374,7 +374,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=args.loglevel, format='%(message)s')
     logging.info('\n{0}'.format('#'*80))
-    logging.info(log_f.format('Run Time Stamp:', dt.datetime.now().isoformat(' ')))
+    logging.info('{0:<20s} {1}'.format('Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info('{0:<20s} {1}'.format('Current Directory:', os.getcwd()))
     logging.info('{0:<20s} {1}'.format('Script:', os.path.basename(sys.argv[0])))
 
