@@ -372,39 +372,6 @@ def valid_raster_func(raster_path, raster_name, hru_param, cs=10):
         return False
     else:
         return True
-
-##def merge_ranges(ranges):
-##    """
-##    Merge overlapping and adjacent ranges and yield the merged ranges
-##    in order. The argument must be an iterable of pairs (start, stop).
-##
-##    >>> list(merge_ranges([(5,7), (3,5), (-1,3)]))
-##    [(-1, 7)]
-##    >>> list(merge_ranges([(5,6), (3,4), (1,2)]))
-##    [(1, 2), (3, 4), (5, 6)]
-##    >>> list(merge_ranges([]))
-##    []
-##    """
-##    ranges = iter(sorted(ranges))
-##    current_start, current_stop = next(ranges)
-##    for start, stop in ranges:
-##        if start > current_stop:
-##            # Gap between segments: output current segment and start a new one.
-##            yield current_start, current_stop
-##            current_start, current_stop = start, stop
-##        else:
-##            # Segments adjacent or overlapping: merge.
-##            current_stop = max(current_stop, stop)
-##    yield current_start, current_stop
-##        
-##class ranges(object):
-##    def __init__(self, value):
-##        self = [[value, value]]
-##    def insert(sefl, value):
-##        for r in self:
-##            if value >= r[0] and value <= r[1]:
-##                continue
-##            elif 
          
       
 def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
@@ -444,7 +411,8 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         sys.exit()
         
     ## Check for duplicate ORIG_FID values
-    if field_duplicate_check(point_path, hru_param.fid_field):
+    hru_param_count = int(arcpy.GetCount_management(point_path).getOutput(0))
+    if field_duplicate_check(point_path, hru_param.fid_field, hru_param_count):
         logging.error(
             ('\nERROR: There are duplicate {0} values\n').format(hru_param.fid_field))
         sys.exit()
@@ -466,15 +434,13 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
     ##env.cellSize = hru_param.cs     
 
     ## Only ~65536 objects can be processed by zonal stats
-    ##data_dict = defaultdict(dict)
-    hru_param_count = int(arcpy.GetCount_management(point_path).getOutput(0))
     block_size = 65000
-    for i, x in enumerate(range(0, hru_param_count, block_size)):
-        logging.info('  FIDS: {0}-{1}'.format(x, x+block_size))
+    for i, x in enumerate(xrange(0, hru_param_count, block_size)):
+        logging.info('  FIDS: {0}-{1}'.format(x, x + block_size))
         ## Select a subset of the cell centroids
         logging.debug('    Selecting FID subset')
         subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
-            hru_param.fid_field, x, x+block_size)
+            hru_param.fid_field, x, x + block_size)
         arcpy.Select_analysis(
             point_path, point_subset_path, subset_str)
         ## Convert points subset to raster
@@ -483,10 +449,9 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
             point_subset_path, hru_param.fid_field,
             hru_raster_path, hru_param.cs)
             
-        data_dict = defaultdict(dict)
-
         ## Zonal stats
         logging.debug('    Calculating zonal stats')
+        data_dict = defaultdict(dict)
         for zs_field, (raster_path, zs_stat) in sorted(zs_dict.items()):
             zs_name = '{0}_{1}'.format(zs_field.upper(), i)
             logging.info('    {0}: {1}'.format(zs_stat.upper(), zs_name))
@@ -545,35 +510,11 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         if arcpy.Exists(hru_raster_path):
             arcpy.Delete_management(hru_raster_path)   
 
-    ## DEADBEEF - Write data for each block immediately after it is computed
-    #### Write values to polygon
-    ##logging.info('    Writing values to polygons')
-    ##zs_fields = sorted(zs_dict.keys())
-    ##fields = zs_fields + [hru_param.fid_field]
-    ##with arcpy.da.UpdateCursor(polygon_path, fields) as u_cursor:
-    ##    for row in u_cursor:
-    ##        ## Create an empty dictionary if FID does not exist
-    ##        ## Missing FIDs did not have zonal stats calculated
-    ##        row_dict = data_dict.get(int(row[-1]), None)
-    ##        for i, zs_field in enumerate(zs_fields):
-    ##            ## If stats were calculated for only some parameters,
-    ##            ##   then set missing parameter value to nodata value (-999)
-    ##            if row_dict:
-    ##                try:
-    ##                    row[i] = row_dict[zs_field]
-    ##                except KeyError:
-    ##                    row[i] = nodata_value
-    ##            ## Otherwise, if no stats were calculated,
-    ##            ##   reset value to 0 (shapefile default)
-    ##            else:
-    ##                row[i] = default_value
-    ##        u_cursor.updateRow(row)
     arcpy.ClearEnvironment('extent')
     arcpy.ClearEnvironment('outputCoordinateSystem')
     arcpy.ClearEnvironment('cellSize')
 
-    
-def field_duplicate_check(table_path, field_name):
+def field_duplicate_check(table_path, field_name, n=None):
     """Check if there are duplicate values in a shapefile field
     
     For now assume table_path is actually a shapefile that can be read 
@@ -590,130 +531,145 @@ def field_duplicate_check(table_path, field_name):
     ## Eventually check that field is in table
     field_obj = arcpy.ListFields(table_path, field_name)[0]
     
-    n = int(arcpy.GetCount_management(table_path).getOutput(0))
-    n32_max = 1000000
-    ##n32_max = 2000000
+    if n is None:
+        n = int(arcpy.GetCount_management(table_path).getOutput(0))
+    n32_max = 2000000
     logging.debug('\n  Testing for duplicate values')
     logging.debug('    field: {}'.format(field_name))
-    logging.debug('    features: {}'.format(n))
+    logging.debug('    features:    {}'.format(n))
     logging.debug('    max 32bit n: {}'.format(n32_max))
     logging.debug('    sys.maxsize: {}'.format(sys.maxsize))
     
     if sys.maxsize > 2**32 or n < n32_max:
-        ## If 64 bit or row count is low, read all values into memory
+        ## If 64-bit or row count is low, read all values into memory
         fid_list = [r[0] for r in arcpy.da.SearchCursor(table_path, [field_name])]
         if len(fid_list) != len(set(fid_list)):
             return True
         else:
             logging.debug('    No duplicates')
             return False
-    elif field_obj.type in ['Integer', 'SmallInteger']:
-        ## This approach will only work with integers
-        block_size = 100000
-        fid_ranges = []
-        for i, x in enumerate(range(0, n, block_size)):
-            logging.info('    FIDS: {0}-{1}'.format(x, x+block_size))
-            subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
-                arcpy.Describe(table_path).OIDFieldName, x, x+block_size)
-                
-            ## Don't sort here since it gets sorted in group_ranges()
-            fid_list = [r[0] for r in arcpy.da.SearchCursor(
-                table_path, [field_name], subset_str)]
-            
-            ## Return True if there are duplicates in a subset
-            if len(fid_list) != len(set(fid_list)):
-                return True          
-            
-            ## Group consecutive values into ranges
-            fid_new_ranges = list(group_ranges(fid_list))
-                
-            ## Check if any of the new ranges overlap each other
-            ## Skip for now since subset duplicates were checked above
-            ##if ranges_overlap(fid_new_ranges):
-            ##    return True
-                
-            ## Check if any of the new ranges overlap the existing ranges
-            if ranges_overlap(fid_ranges + fid_new_ranges):
-                return True
-                
-            ## Merge subset ranges into main range list
-            fid_ranges = list(merge_ranges(fid_ranges + fid_new_ranges))
-            del fid_new_ranges
-
-        logging.debug('    FID ranges: {}'.format(fid_ranges))
-        logging.debug('    No duplicates')
-        return False
     else:
-        ## For now, assume there are not duplicates if the values can't
-        ##   all be read in
-        logging.debug(
-            '    Assuming no duplicates since field type is not integer, \n'+
-            '      table contains more than {} rows, and 32-bit Python is \n'+
-            '      limited to 2 GB of memory.')
-        return False
+        duplicate_flag = False
+        fid_prev = None
+        cursor = arcpy.SearchCursor(
+            table_path, fields=field_name, sort_fields=field_name+' A')
+        for row in cursor:
+            fid = row.getValue(field_name)
+            if fid == fid_prev and fid_prev is not None:
+                duplicate_flag = True
+                break
+            else:
+                fid_prev = fid
+        del cursor, row
+        logging.debug('    No duplicates')
+        return duplicate_flag     
+    ##elif field_obj.type in ['Integer', 'SmallInteger']:
+    ##    ## This approach will only work with integers
+    ##    block_size = 200000
+    ##    fid_ranges = []
+    ##    for i, x in enumerate(range(0, n, block_size)):
+    ##        logging.info('    FIDS: {0}-{1}'.format(x, x + block_size))
+    ##        subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
+    ##            arcpy.Describe(table_path).OIDFieldName, x, x + block_size)
+    ##            
+    ##        ## Don't sort here since it gets sorted in group_ranges()
+    ##        fid_list = [r[0] for r in arcpy.da.SearchCursor(
+    ##            table_path, [field_name], subset_str)]
+    ##        
+    ##        ## Return True if there are duplicates in a subset
+    ##        if len(fid_list) != len(set(fid_list)):
+    ##            return True          
+    ##        
+    ##        ## Group consecutive values into ranges
+    ##        fid_new_ranges = list(group_ranges(fid_list))
+    ##            
+    ##        ## Check if any of the new ranges overlap each other
+    ##        ## Skip for now since subset duplicates were checked above
+    ##        ##if ranges_overlap(fid_new_ranges):
+    ##        ##    return True
+    ##            
+    ##        ## Check if any of the new ranges overlap the existing ranges
+    ##        if ranges_overlap(fid_ranges + fid_new_ranges):
+    ##            return True
+    ##            
+    ##        ## Merge subset ranges into main range list
+    ##        fid_ranges = list(merge_ranges(fid_ranges + fid_new_ranges))
+    ##        del fid_new_ranges
+    ##
+    ##    logging.debug('    FID ranges: {}'.format(fid_ranges))
+    ##    logging.debug('    No duplicates')
+    ##    return False
+    ##else:
+    ##    ## For now, assume there are not duplicates if the values can't
+    ##    ##   all be read in
+    ##    logging.debug(
+    ##        '    Assuming no duplicates since field type is not integer, \n'+
+    ##        '      table contains more than {} rows, and 32-bit Python is \n'+
+    ##        '      limited to 2 GB of memory.')
+    ##    return False
 
-def group_ranges(input_list):
-    """Group
-    
-    Copied from:
-    http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
-    
-    Args:
-        input_list (list): list of numbers to group into ranges
-        
-    Yields
-         tuple: pairs (min, max)
-    """
-    for k, g in itertools.groupby(enumerate(sorted(input_list)), lambda (i,x):i-x):
-        group = map(itemgetter(1), g)
-        yield group[0], group[-1]
-       
-def merge_ranges(ranges):
-    """Merge overlapping and adjacent integer ranges
-
-    Yield the merged ranges in order
-    The argument must be an iterable of pairs (start, stop).
-    
-    Copied from:
-    http://codereview.stackexchange.com/questions/21307/consolidate-list-of-ranges-that-overlap
-
-    >>> list(merge_ranges([(5,7), (3,5), (-1,3)]))
-    [(-1, 7)]
-    >>> list(merge_ranges([(5,6), (3,4), (1,2)]))
-    [(1, 2), (3, 4), (5, 6)]
-    >>> list(merge_ranges([]))
-    []
-    
-    Args:
-        ranges (list): Iterable of pairs (min, max)
-        
-    Yields:
-        tuple: pairs (min, max)
-    """
-    ranges = iter(sorted(ranges))
-    current_start, current_stop = next(ranges)
-    for start, stop in ranges:
-        if start > (current_stop + 1):
-            # Gap between segments: output current segment and start a new one.
-            yield current_start, current_stop
-            current_start, current_stop = start, stop
-        else:
-            # Segments adjacent or overlapping: merge.
-            current_stop = max(current_stop, stop)
-    yield current_start, current_stop
-
-def ranges_overlap(ranges):    
-    """Test if ranges overlap
-    
-    Args:
-        ranges (list): Iterable of pairs (min, max)
-    Returns:
-         bool: True if ranges overlap each other, False otherwise
-    """
-    for r1, r2 in itertools.combinations(ranges, 2):
-        if r1[1] > r2[0] and r1[0] < r2[1]:
-            return True
-    return False
+##def group_ranges(input_list):
+##    """Group
+##    
+##    Copied from:
+##    http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
+##    
+##    Args:
+##        input_list (list): list of numbers to group into ranges
+##        
+##    Yields
+##         tuple: pairs (min, max)
+##    """
+##    for k, g in itertools.groupby(enumerate(sorted(input_list)), lambda (i,x):i-x):
+##        group = map(itemgetter(1), g)
+##        yield group[0], group[-1]
+##       
+##def merge_ranges(ranges):
+##    """Merge overlapping and adjacent integer ranges
+##
+##    Yield the merged ranges in order
+##    The argument must be an iterable of pairs (start, stop).
+##    
+##    Copied from:
+##    http://codereview.stackexchange.com/questions/21307/consolidate-list-of-ranges-that-overlap
+##
+##    >>> list(merge_ranges([(5,7), (3,5), (-1,3)]))
+##    [(-1, 7)]
+##    >>> list(merge_ranges([(5,6), (3,4), (1,2)]))
+##    [(1, 2), (3, 4), (5, 6)]
+##    >>> list(merge_ranges([]))
+##    []
+##    
+##    Args:
+##        ranges (list): Iterable of pairs (min, max)
+##        
+##    Yields:
+##        tuple: pairs (min, max)
+##    """
+##    ranges = iter(sorted(ranges))
+##    current_start, current_stop = next(ranges)
+##    for start, stop in ranges:
+##        if start > (current_stop + 1):
+##            # Gap between segments: output current segment and start a new one.
+##            yield current_start, current_stop
+##            current_start, current_stop = start, stop
+##        else:
+##            # Segments adjacent or overlapping: merge.
+##            current_stop = max(current_stop, stop)
+##    yield current_start, current_stop
+##
+##def ranges_overlap(ranges):    
+##    """Test if ranges overlap
+##    
+##    Args:
+##        ranges (list): Iterable of pairs (min, max)
+##    Returns:
+##         bool: True if ranges overlap each other, False otherwise
+##    """
+##    for r1, r2 in itertools.combinations(ranges, 2):
+##        if r1[1] > r2[0] and r1[0] < r2[1]:
+##            return True
+##    return False
        
     
 def extent_string(extent_obj):
@@ -1005,6 +961,7 @@ def zone_by_area_func(zone_path, zone_field, zone_value, hru_param_path,
         arcpy.CalculateField_management(
             zone_path, zone_value_field,
             '!{0}! + 1'.format(zone_value), 'PYTHON')
+            
     ## If zone value is an INT, save it into a field first
     elif type(zone_value) is int:
         ##zone_value = int(zone_value)
@@ -1016,41 +973,56 @@ def zone_by_area_func(zone_path, zone_field, zone_value, hru_param_path,
         arcpy.CalculateField_management(
             zone_path, zone_value_field,
             '!{0}!'.format(zone_value), 'PYTHON')
+            
     ## Calculate area of HRU cell if necessary
     ##if not arcpy.ListFields(zone_path, area_field):
     ##    arcpy.AddField_management(zone_path, area_field, 'DOUBLE')
     ##    cell_area_func(zone_path, area_field)
+    
     ## Intersect the zone layer with the fishnet
     ##zone_int_path = os.path.join('in_memory', 'hru_lakes')
     zone_int_path = zone_path.replace('.shp', '_intersect.shp')
     arcpy.Intersect_analysis(
         (hru_param_path, zone_path), zone_int_path)
+        
     ## Calculate using cell_area_func to force units to match
     cell_area_func(zone_int_path, int_area_field)
-    ## Read in FID of selected cells
-    hru_cell_dict = dict()
-    fields = [
-        hru_param.fid_field, hru_area_field,
-        int_area_field, zone_value_field]
-    with arcpy.da.SearchCursor(zone_int_path, fields) as s_cursor:
-        for row in s_cursor:
-            if (100 * float(row[2]) / float(row[1])) >= area_pct:
-                hru_cell_dict[int(row[0])] = [float(row[3]), float(row[2])]
-    ## Set value of selected HRU cells
-    fields = [hru_param.fid_field, zone_field]
-    if zone_area_field:
-        fields.append(zone_area_field)
-    with arcpy.da.UpdateCursor(hru_param_path, fields) as u_cursor:
-        for row in u_cursor:
-            ## Remove items to speed up subsequent searches
-            try:
-                if len(fields) == 3:
-                    row[1], row[2] = hru_cell_dict.pop(int(row[0]))
-                elif len(fields) == 2:
-                    row[1] = hru_cell_dict.pop(int(row[0]))
-                u_cursor.updateRow(row)
-            except KeyError: pass
 
+    n = int(arcpy.GetCount_management(zone_int_path).getOutput(0))
+    block_size = 200000
+    for i, x in enumerate(range(0, n, block_size)):
+        logging.debug('    FIDS: {0}-{1}'.format(x, x + block_size))
+        subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
+            hru_param.fid_field, x, x + block_size)
+            ##arcpy.Describe(zone_int_path).OIDFieldName, x, x + block_size)
+        
+        ## Read in FID of selected cells
+        hru_cell_dict = dict()
+        fields = [
+            hru_param.fid_field, hru_area_field,
+            int_area_field, zone_value_field]
+        with arcpy.da.SearchCursor(zone_int_path, fields, subset_str) as s_cursor:
+            for row in s_cursor:
+                if (100 * float(row[2]) / float(row[1])) >= area_pct:
+                    hru_cell_dict[int(row[0])] = [float(row[3]), float(row[2])]
+                    
+        ## Set value of selected HRU cells
+        fields = [hru_param.fid_field, zone_field]
+        if zone_area_field:
+            fields.append(zone_area_field)
+        with arcpy.da.UpdateCursor(hru_param_path, fields, subset_str) as u_cursor:
+            for row in u_cursor:
+                ## Remove items to speed up subsequent searches
+                try:
+                    if len(fields) == 3:
+                        row[1], row[2] = hru_cell_dict.pop(int(row[0]))
+                    elif len(fields) == 2:
+                        row[1] = hru_cell_dict.pop(int(row[0]))
+                    u_cursor.updateRow(row)
+                except KeyError: 
+                    pass
+        del hru_cell_dict  
+            
 def zone_by_centroid_func(zone_path, zone_field, zone_value, 
                           hru_param_path, hru_point_path, hru_param):
     """Flag cells that are inside a feature based on the centroid location
@@ -1098,28 +1070,40 @@ def zone_by_centroid_func(zone_path, zone_field, zone_value,
     zone_int_path = zone_path.replace('.shp', '_intersect.shp')
     arcpy.Intersect_analysis(
         (hru_point_path, zone_path), zone_int_path)
+        
+    ## DEADBEEF - Why do I make a layer and select all features?
     zone_int_layer = 'zone_int_layer'
     arcpy.MakeFeatureLayer_management(zone_int_path, zone_int_layer)
     arcpy.SelectLayerByAttribute_management(zone_int_layer, 'CLEAR_SELECTION')
     arcpy.SelectLayerByAttribute_management(zone_int_layer, 'SWITCH_SELECTION')
 
-    ## Read in FID of selected cells
-    hru_point_dict = dict()
-    fields = (hru_param.fid_field, zone_value_field)
-    with arcpy.da.SearchCursor(zone_int_layer, fields) as s_cursor:
-        for row in s_cursor:
-            hru_point_dict[int(row[0])] = row[1]
+    n = int(arcpy.GetCount_management(zone_int_layer).getOutput(0))
+    block_size = 200000
+    for i, x in enumerate(range(0, n, block_size)):
+        logging.debug('    FIDS: {0}-{1}'.format(x, x + block_size))
+        subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
+            hru_param.fid_field, x, x + block_size)
+            ##arcpy.Describe(zone_int_layer).OIDFieldName, x, x + block_size)
 
-    ## Set value of selected HRU cells
-    fields = (hru_param.fid_field, zone_field)
-    with arcpy.da.UpdateCursor(hru_param_path, fields) as u_cursor:
-        for row in u_cursor:
-            ## Remove items to speed up subsequent searches
-            try:
-                row[1] = hru_point_dict.pop(int(row[0]))
-                u_cursor.updateRow(row)
-            except KeyError:
-                pass
+        ## Read in FID of selected cells
+        hru_point_dict = dict()
+        fields = (hru_param.fid_field, zone_value_field)
+        with arcpy.da.SearchCursor(zone_int_layer, fields, subset_str) as s_cursor:
+            for row in s_cursor:
+                hru_point_dict[int(row[0])] = row[1]
+        
+        ## Set value of selected HRU cells
+        fields = (hru_param.fid_field, zone_field)
+        with arcpy.da.UpdateCursor(hru_param_path, fields, subset_str) as u_cursor:
+            for row in u_cursor:
+                ## Remove items to speed up subsequent searches
+                try:
+                    row[1] = hru_point_dict.pop(int(row[0]))
+                    u_cursor.updateRow(row)
+                except KeyError:
+                    pass
+        del hru_point_dict
+                    
     ## Cleanup
     arcpy.Delete_management(zone_int_layer)
 
