@@ -533,14 +533,16 @@ def field_duplicate_check(table_path, field_name, n=None):
     
     if n is None:
         n = int(arcpy.GetCount_management(table_path).getOutput(0))
-    n32_max = 2000000
+    n32_max = 3000000
     logging.debug('\n  Testing for duplicate values')
-    logging.debug('    field: {}'.format(field_name))
-    logging.debug('    features:    {}'.format(n))
-    logging.debug('    max 32bit n: {}'.format(n32_max))
-    logging.debug('    sys.maxsize: {}'.format(sys.maxsize))
+    logging.debug('    field:    {}'.format(field_name))
+    logging.debug('    features: {}'.format(n))
+    logging.debug('    n32_max:  {}'.format(n32_max))
+    logging.debug('    2**32:    {}'.format(2**32))
+    logging.debug('    maxsize:  {}'.format(sys.maxsize))
     
     if sys.maxsize > 2**32 or n < n32_max:
+        logging.debug('    Reading values')
         ## If 64-bit or row count is low, read all values into memory
         fid_list = [r[0] for r in arcpy.da.SearchCursor(table_path, [field_name])]
         if len(fid_list) != len(set(fid_list)):
@@ -548,128 +550,129 @@ def field_duplicate_check(table_path, field_name, n=None):
         else:
             logging.debug('    No duplicates')
             return False
-    else:
-        duplicate_flag = False
-        fid_prev = None
-        cursor = arcpy.SearchCursor(
-            table_path, fields=field_name, sort_fields=field_name+' A')
-        for row in cursor:
-            fid = row.getValue(field_name)
-            if fid == fid_prev and fid_prev is not None:
-                duplicate_flag = True
-                break
-            else:
-                fid_prev = fid
-        del cursor, row
-        logging.debug('    No duplicates')
-        return duplicate_flag     
-    ##elif field_obj.type in ['Integer', 'SmallInteger']:
-    ##    ## This approach will only work with integers
-    ##    block_size = 200000
-    ##    fid_ranges = []
-    ##    for i, x in enumerate(range(0, n, block_size)):
-    ##        logging.info('    FIDS: {0}-{1}'.format(x, x + block_size))
-    ##        subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
-    ##            arcpy.Describe(table_path).OIDFieldName, x, x + block_size)
-    ##            
-    ##        ## Don't sort here since it gets sorted in group_ranges()
-    ##        fid_list = [r[0] for r in arcpy.da.SearchCursor(
-    ##            table_path, [field_name], subset_str)]
-    ##        
-    ##        ## Return True if there are duplicates in a subset
-    ##        if len(fid_list) != len(set(fid_list)):
-    ##            return True          
-    ##        
-    ##        ## Group consecutive values into ranges
-    ##        fid_new_ranges = list(group_ranges(fid_list))
-    ##            
-    ##        ## Check if any of the new ranges overlap each other
-    ##        ## Skip for now since subset duplicates were checked above
-    ##        ##if ranges_overlap(fid_new_ranges):
-    ##        ##    return True
-    ##            
-    ##        ## Check if any of the new ranges overlap the existing ranges
-    ##        if ranges_overlap(fid_ranges + fid_new_ranges):
-    ##            return True
-    ##            
-    ##        ## Merge subset ranges into main range list
-    ##        fid_ranges = list(merge_ranges(fid_ranges + fid_new_ranges))
-    ##        del fid_new_ranges
-    ##
-    ##    logging.debug('    FID ranges: {}'.format(fid_ranges))
-    ##    logging.debug('    No duplicates')
-    ##    return False
-    ##else:
-    ##    ## For now, assume there are not duplicates if the values can't
-    ##    ##   all be read in
-    ##    logging.debug(
-    ##        '    Assuming no duplicates since field type is not integer, \n'+
-    ##        '      table contains more than {} rows, and 32-bit Python is \n'+
-    ##        '      limited to 2 GB of memory.')
-    ##    return False
+    elif field_obj.type in ['Integer', 'SmallInteger']:
+        ## This approach will only work with integers
+        block_size = 500000
+        fid_ranges = []
+        for i, x in enumerate(xrange(0, n, block_size)):
+            logging.debug('    FIDS: {0}-{1}'.format(x, x + block_size))
+            subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
+                arcpy.Describe(table_path).OIDFieldName, x, x + block_size)
+                
+            ## Don't sort here since it gets sorted in group_ranges()
+            fid_list = [r[0] for r in arcpy.da.SearchCursor(
+                table_path, [field_name], subset_str)]
+            
+            ## Return True if there are duplicates in a subset
+            if len(fid_list) != len(set(fid_list)):
+                return True          
+            
+            ## Group consecutive values into ranges
+            fid_new_ranges = list(group_ranges(fid_list))
+                
+            ## Check if any of the new ranges overlap each other
+            ## Skip for now since subset duplicates were checked above
+            ##if ranges_overlap(fid_new_ranges):
+            ##    return True
+                
+            ## Check if any of the new ranges overlap the existing ranges
+            if ranges_overlap(fid_ranges + fid_new_ranges):
+                return True
+                
+            ## Merge subset ranges into main range list
+            fid_ranges = list(merge_ranges(fid_ranges + fid_new_ranges))
+            del fid_new_ranges
 
-##def group_ranges(input_list):
-##    """Group
-##    
-##    Copied from:
-##    http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
-##    
-##    Args:
-##        input_list (list): list of numbers to group into ranges
-##        
-##    Yields
-##         tuple: pairs (min, max)
-##    """
-##    for k, g in itertools.groupby(enumerate(sorted(input_list)), lambda (i,x):i-x):
-##        group = map(itemgetter(1), g)
-##        yield group[0], group[-1]
-##       
-##def merge_ranges(ranges):
-##    """Merge overlapping and adjacent integer ranges
-##
-##    Yield the merged ranges in order
-##    The argument must be an iterable of pairs (start, stop).
-##    
-##    Copied from:
-##    http://codereview.stackexchange.com/questions/21307/consolidate-list-of-ranges-that-overlap
-##
-##    >>> list(merge_ranges([(5,7), (3,5), (-1,3)]))
-##    [(-1, 7)]
-##    >>> list(merge_ranges([(5,6), (3,4), (1,2)]))
-##    [(1, 2), (3, 4), (5, 6)]
-##    >>> list(merge_ranges([]))
-##    []
-##    
-##    Args:
-##        ranges (list): Iterable of pairs (min, max)
-##        
-##    Yields:
-##        tuple: pairs (min, max)
-##    """
-##    ranges = iter(sorted(ranges))
-##    current_start, current_stop = next(ranges)
-##    for start, stop in ranges:
-##        if start > (current_stop + 1):
-##            # Gap between segments: output current segment and start a new one.
-##            yield current_start, current_stop
-##            current_start, current_stop = start, stop
-##        else:
-##            # Segments adjacent or overlapping: merge.
-##            current_stop = max(current_stop, stop)
-##    yield current_start, current_stop
-##
-##def ranges_overlap(ranges):    
-##    """Test if ranges overlap
-##    
-##    Args:
-##        ranges (list): Iterable of pairs (min, max)
-##    Returns:
-##         bool: True if ranges overlap each other, False otherwise
-##    """
-##    for r1, r2 in itertools.combinations(ranges, 2):
-##        if r1[1] > r2[0] and r1[0] < r2[1]:
-##            return True
-##    return False
+        logging.debug('    FID ranges: {}'.format(fid_ranges))
+        logging.debug('    No duplicates')
+        return False
+    else:
+        ## For now, assume there are not duplicates if the values can't
+        ##   all be read in
+        logging.debug(
+            '    Assuming no duplicates since field type is not integer, \n'+
+            '      table contains more than {} rows, and 32-bit Python is \n'+
+            '      limited to 2 GB of memory.')
+        return False
+    ## DEADBEEF - I'm not sure this will actually work on a really large table
+    ##else:
+    ##    duplicate_flag = False
+    ##    fid_prev = None
+    ##    cursor = arcpy.SearchCursor(
+    ##        table_path, fields=field_name, sort_fields=field_name+' A')
+    ##    for row in cursor:
+    ##        fid = row.getValue(field_name)
+    ##        if fid == fid_prev and fid_prev is not None:
+    ##            duplicate_flag = True
+    ##            break
+    ##        else:
+    ##            fid_prev = fid
+    ##    del cursor, row
+    ##    logging.debug('    No duplicates')
+    ##    return duplicate_flag     
+
+def group_ranges(input_list):
+    """Group
+    
+    Copied from:
+    http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
+    
+    Args:
+        input_list (list): list of numbers to group into ranges
+        
+    Yields
+         tuple: pairs (min, max)
+    """
+    for k, g in itertools.groupby(enumerate(sorted(input_list)), lambda (i,x):i-x):
+        group = map(itemgetter(1), g)
+        yield group[0], group[-1]
+       
+def merge_ranges(ranges):
+    """Merge overlapping and adjacent integer ranges
+
+    Yield the merged ranges in order
+    The argument must be an iterable of pairs (start, stop).
+    
+    Copied from:
+    http://codereview.stackexchange.com/questions/21307/consolidate-list-of-ranges-that-overlap
+
+    >>> list(merge_ranges([(5,7), (3,5), (-1,3)]))
+    [(-1, 7)]
+    >>> list(merge_ranges([(5,6), (3,4), (1,2)]))
+    [(1, 2), (3, 4), (5, 6)]
+    >>> list(merge_ranges([]))
+    []
+    
+    Args:
+        ranges (list): Iterable of pairs (min, max)
+        
+    Yields:
+        tuple: pairs (min, max)
+    """
+    ranges = iter(sorted(ranges))
+    current_start, current_stop = next(ranges)
+    for start, stop in ranges:
+        if start > (current_stop + 1):
+            # Gap between segments: output current segment and start a new one.
+            yield current_start, current_stop
+            current_start, current_stop = start, stop
+        else:
+            # Segments adjacent or overlapping: merge.
+            current_stop = max(current_stop, stop)
+    yield current_start, current_stop
+
+def ranges_overlap(ranges):    
+    """Test if ranges overlap
+    
+    Args:
+        ranges (list): Iterable of pairs (min, max)
+    Returns:
+         bool: True if ranges overlap each other, False otherwise
+    """
+    for r1, r2 in itertools.combinations(ranges, 2):
+        if r1[1] > r2[0] and r1[0] < r2[1]:
+            return True
+    return False
        
     
 def extent_string(extent_obj):
@@ -887,13 +890,13 @@ def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
     ## Adjust extent to match snap
     projected_extent = adjust_extent_to_snap(
         projected_extent, target_extent.lowerLeft, target_cs, 'EXPAND', False)
-    logging.debug('  Snapped Extent: {0}'.format(
+    logging.debug('  Snapped Extent:   {0}'.format(
         extent_string(projected_extent)))
     ## Buffer extent 4 input cells
     ##projected_extent = buffer_extent_func(projected_extent, 4 * target_cs)
     projected_extent = buffer_extent_func(
         projected_extent, 4 * max(target_cs, hru_cs))
-    logging.debug('  Buffered Extent: {0}'.format(
+    logging.debug('  Buffered Extent:  {0}'.format(
         extent_string(projected_extent)))
     return projected_extent
 
