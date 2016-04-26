@@ -25,7 +25,7 @@ from support_functions import *
 
 
 def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
-    """Calculate GSFLOW DEM Parameters
+    """Calculate PRMS DEM Parameters
 
     Args:
         config_path: Project config file path
@@ -39,16 +39,16 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Initialize hru parameters class
     hru = HRUParameters(config_path)
 
-    # Open input parameter config file
-    inputs_cfg = ConfigParser.ConfigParser()
-    try:
-        inputs_cfg.readfp(open(config_path))
-    except:
-        logging.error('\nERROR: Config file could not be read, ' +
-                      'is not an input file, or does not exist\n' +
-                      'ERROR: config_file = {0}\n').format(config_path)
-        sys.exit()
-    logging.debug('\nReading Input File')
+#     # Open input parameter config file
+#     inputs_cfg = ConfigParser.ConfigParser()
+#     try:
+#         inputs_cfg.readfp(open(config_path))
+#     except:
+#         logging.error('\nERROR: Config file could not be read, ' +
+#                       'is not an input file, or does not exist\n' +
+#                       'ERROR: config_file = {0}\n').format(config_path)
+#         sys.exit()
+#     logging.debug('\nReading Input File')
 
     # Log DEBUG to file
     log_file_name = 'dem_parameters_log.txt'
@@ -57,36 +57,22 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nGSFLOW DEM Parameters')
+    logging.info('\nPRMS DEM Parameters')
 
-    #
-    dem_orig_path = inputs_cfg.get('INPUTS', 'dem_orig_path')
-    # Resampling method 'BILINEAR', 'CUBIC', 'NEAREST'
-    dem_proj_method = inputs_cfg.get('INPUTS', 'dem_projection_method').upper()
-    dem_cs = inputs_cfg.getint('INPUTS', 'dem_cellsize')
-
-    #
-    reset_dem_adj_flag = inputs_cfg.getboolean('INPUTS', 'reset_dem_adj_flag')
-    dem_adj_copy_field = inputs_cfg.get('INPUTS', 'dem_adj_copy_field')
-
-    # Use PRISM temperature to set Jensen-Haise coefficient
-    calc_prism_jh_coef_flag = inputs_cfg.getboolean(
-        'INPUTS', 'calc_prism_jh_coef_flag')
-
-    # Calculate flow accumulation weighted elevation
-    calc_flow_acc_dem_flag = inputs_cfg.getboolean(
-        'INPUTS', 'calc_flow_acc_dem_flag')
-    if calc_flow_acc_dem_flag:
+    # read the DEM parameters from the file, check if DEM exists
+    hru.read_DEM_parameters()
+    
+    if hru.calc_flow_acc_dem_flag:
         # Get factor for scaling dem_flowacc values to avoid 32 bit int limits
         try:
-            flow_acc_dem_factor = float(inputs_cfg.get('INPUTS', 'flow_acc_dem_factor'))
+            flow_acc_dem_factor = float(hru.inputs_cfg.get('INPUTS', 'flow_acc_dem_factor'))
         except:
             # This is a worst case for keeping flow_acc_dem from exceeding 2E9
             # Assume all cells flow to 1 cell
             flow_acc_dem_factor = int(
                 arcpy.GetCount_management(hru.point_path).getOutput(0))
             # Assume flow acc is in every DEM cell in HRU cell
-            flow_acc_dem_factor *= (float(hru.cs) / dem_cs) ** 2
+            flow_acc_dem_factor *= (float(300.0) / hru.dem_cs) ** 2
             # Need to account for the elevation in this worst cell
             # For now just make it 100
             # flow_acc_dem_factor *= max_elevation
@@ -106,36 +92,23 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # DEADBEEF - For now, set these to True only if needed
     # calc_flow_acc_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_flag')
     # calc_flow_dir_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_dir_flag')
-    if calc_flow_acc_dem_flag:
+    if hru.calc_flow_acc_dem_flag:
         calc_flow_acc_flag = True
         calc_flow_dir_flag = True
     else:
         calc_flow_acc_flag = False
         calc_flow_dir_flag = False
 
-    # Remap
-    remap_ws = inputs_cfg.get('INPUTS', 'remap_folder')
-    aspect_remap_name = inputs_cfg.get('INPUTS', 'aspect_remap')
-    temp_adj_remap_name = inputs_cfg.get('INPUTS', 'temp_adj_remap')
-
     # Check input paths
-    if not arcpy.Exists(hru.polygon_path):
-        logging.error(
-            '\nERROR: Fishnet ({0}) does not exist\n'.format(hru.polygon_path))
-        sys.exit()
-    # Check that either the original DEM raster exists
-    if not arcpy.Exists(dem_orig_path):
-        logging.error(
-            '\nERROR: DEM ({0}) raster does not exist\n'.format(dem_orig_path))
-        sys.exit()
-    # Check that remap folder is valid
-    if not os.path.isdir(remap_ws):
-        logging.error('\nERROR: Remap folder does not exist\n')
-        sys.exit()
+    hru.check_polygon_path()
+
+    # Read remap from config file and check that remap folder is valid
+    hru.read_remap_parameters()
+
     # Check that remap files exist
     # Check remap files comment style
-    aspect_remap_path = os.path.join(remap_ws, aspect_remap_name)
-    temp_adj_remap_path = os.path.join(remap_ws, temp_adj_remap_name)
+    aspect_remap_path = os.path.join(hru.remap_ws, hru.aspect_remap_name)
+    temp_adj_remap_path = os.path.join(hru.remap_ws, hru.temp_adj_remap_name)
     remap_path_list = [aspect_remap_path, temp_adj_remap_path]
     for remap_path in remap_path_list:
         remap_check(remap_path)
@@ -163,20 +136,6 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #            ('\nERROR: ASCII remap file ({0}) has pre-ArcGIS 10.2 ' +
     #             'comments\n').format(os.path.basename(temp_adj_remap_path)))
     #        sys.exit()
-
-    # Check other inputs
-    if dem_cs <= 0:
-        logging.error('\nERROR: DEM cellsize must be greater than 0')
-        sys.exit()
-    dem_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
-    if dem_proj_method not in dem_proj_method_list:
-        logging.error('\nERROR: DEM projection method must be: {0}'.format(
-            ', '.join(dem_proj_method_list)))
-        sys.exit()
-    if reset_dem_adj_flag:
-        logging.warning('\nWARNING: All values in {0} will be overwritten'.format(
-            hru.dem_adj_field))
-        raw_input('  Press ENTER to continue')
 
 
     # Build output folder if necessary
@@ -214,7 +173,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.dem_max_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_min_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_adj_field, 'DOUBLE')
-    if calc_flow_acc_dem_flag:
+    if hru.calc_flow_acc_dem_flag:
         add_field_func(hru.polygon_path, hru.dem_flowacc_field, 'DOUBLE')
         add_field_func(hru.polygon_path, hru.dem_sum_field, 'DOUBLE')
         add_field_func(hru.polygon_path, hru.dem_count_field, 'DOUBLE')
@@ -233,11 +192,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.tmax_adj_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.tmin_adj_field, 'DOUBLE')
 
-    # Check that dem_adj_copy_field exists
-    if len(arcpy.ListFields(hru.polygon_path, dem_adj_copy_field)) == 0:
-        logging.error('\nERROR: dem_adj_copy_field {0} does not exist\n'.format(
-            dem_adj_copy_field))
-        sys.exit()
+    
 
     # Assume all DEM rasters will need to be rebuilt
     # Check slope, aspect, and proejcted DEM rasters
@@ -251,24 +206,26 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #    dem_path, 'projected DEM', hru, dem_cs)
     # if arcpy.Exists(dem_orig_path) and not dem_flag:
     logging.info('\nProjecting DEM raster')
-    dem_orig_sr = Raster(dem_orig_path).spatialReference
+    dem_orig_sr = Raster(hru.dem_orig_path).spatialReference
     logging.debug('  DEM GCS:   {0}'.format(
         dem_orig_sr.GCS.name))
+    
     # Remove existing projected DEM
     if arcpy.Exists(dem_path):
         arcpy.Delete_management(dem_path)
+        
     # Set preferred transforms
     transform_str = transform_func(hru.sr, dem_orig_sr)
     logging.debug('  Transform: {0}'.format(transform_str))
-    logging.debug('  Projection method: {0}'.format(dem_proj_method))
+    logging.debug('  Projection method: {0}'.format(hru.dem_proj_method))
+    
     # Project DEM
     # DEADBEEF - Arc10.2 ProjectRaster does not honor extent
     logging.debug('  Input SR:  {0}'.format(dem_orig_sr.exportToString()))
     logging.debug('  Output SR: {0}'.format(hru.sr.exportToString()))
     project_raster_func(
-        dem_orig_path, dem_path, hru.sr,
-        dem_proj_method, dem_cs, transform_str,
-        '{0} {1}'.format(hru.ref_x, hru.ref_y),
+        hru.dem_orig_path, dem_path, hru.sr,
+        hru.dem_proj_method, hru.dem_cs, transform_str,
         dem_orig_sr, hru)
     # env.extent = hru.extent
     # arcpy.ProjectRaster_management(
@@ -307,7 +264,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         flow_acc_obj = FlowAccumulation(flow_dir_obj)
         flow_acc_obj.save(flow_acc_path)
         del flow_acc_obj, flow_dir_obj
-    if calc_flow_acc_dem_flag:
+    if hru.calc_flow_acc_dem_flag:
         # flow_acc_dem_obj = dem_fill_obj * flow_acc_obj
         # Low pass filter of flow_acc then take log10
         flow_acc_filter_obj = Filter(Raster(flow_acc_path), 'LOW', 'NODATA')
@@ -364,7 +321,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # List of rasters, fields, and stats for zonal statistics
     zs_dem_dict = dict()
     zs_dem_dict[hru.dem_mean_field] = [dem_path, 'MEAN']
-    if calc_flow_acc_dem_flag:
+    if hru.calc_flow_acc_dem_flag:
         zs_dem_dict[hru.dem_sum_field] = [flow_acc_dem_path, 'SUM']
         zs_dem_dict[hru.dem_count_field] = [flow_acc_filter_path, 'SUM']
     # CGM - Zonal stats wasn't working with median
@@ -405,7 +362,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
 
     # Flow accumulation weighted elevation
-    if calc_flow_acc_dem_flag:
+    if hru.calc_flow_acc_dem_flag:
         logging.info('Calculating {0}'.format(hru.dem_flowacc_field))
         hru_polygon_layer = 'hru_polygon_layer'
         arcpy.MakeFeatureLayer_management(
@@ -432,16 +389,16 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     if all([row[0] == 0 for row in arcpy.da.SearchCursor(
         hru.polygon_path, [hru.dem_adj_field])]):
         logging.info('Filling {0} from {1}'.format(
-            hru.dem_adj_field, dem_adj_copy_field))
+            hru.dem_adj_field, hru.dem_adj_copy_field))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.dem_adj_field,
-            'float(!{0}!)'.format(dem_adj_copy_field), 'PYTHON')
-    elif reset_dem_adj_flag:
+            'float(!{0}!)'.format(hru.dem_adj_copy_field), 'PYTHON')
+    elif hru.reset_dem_adj_flag:
         logging.info('Filling {0} from {1}'.format(
-            hru.dem_adj_field, dem_adj_copy_field))
+            hru.dem_adj_field, hru.dem_adj_copy_field))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.dem_adj_field,
-            'float(!{0}!)'.format(dem_adj_copy_field), 'PYTHON')
+            'float(!{0}!)'.format(hru.dem_adj_copy_field), 'PYTHON')
     else:
         logging.info(
             ('{0} appears to already have been set and ' +
@@ -470,12 +427,13 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     logging.info('Calculating JH_COEF_HRU')
     # First check if PRISM TMAX/TMIN have been set
     # If max July value is 0, use default values
-    if (calc_prism_jh_coef_flag and
+    if (hru.calc_prism_jh_coef_flag and
         (len(arcpy.ListFields(hru.polygon_path, 'TMAX_07')) == 0 or
          field_stat_func(hru.polygon_path, 'TMAX_07', 'MAXIMUM') == 0)):
-        calc_prism_jh_coef_flag = False
+        hru.calc_prism_jh_coef_flag = False
+        
     # Use PRISM temperature values
-    if calc_prism_jh_coef_flag:
+    if hru.calc_prism_jh_coef_flag:
         logging.info('  Using PRISM temperature values')
         tmax_field_list = ['!TMAX_{0:02d}!'.format(m) for m in range(1, 13)]
         tmin_field_list = ['!TMIN_{0:02d}!'.format(m) for m in range(1, 13)]

@@ -306,6 +306,76 @@ class HRUParameters():
             logging.error(
                 '\nERROR: HRU ({0}) does not exist\n'.format(self.polygon_path))
             sys.exit()
+            
+    def read_remap_parameters(self):
+        """
+        Read the remap parameters from the config file and ensure
+        that the folder exists
+        """
+        
+        # Remap
+        self.remap_ws = self.inputs_cfg.get('INPUTS', 'remap_folder')
+        self.aspect_remap_name = self.inputs_cfg.get('INPUTS', 'aspect_remap')
+        self.temp_adj_remap_name = self.inputs_cfg.get('INPUTS', 'temp_adj_remap')
+        
+        # Check that remap folder is valid
+        if not os.path.isdir(self.remap_ws):
+            logging.error('\nERROR: Remap folder does not exist\n')
+            sys.exit()
+                
+        
+    def read_DEM_parameters(self):
+        """
+        Read the DEM properties from the config file
+        """
+        
+        self.dem_orig_path = self.inputs_cfg.get('INPUTS', 'dem_orig_path')
+        
+        # Resampling method 'BILINEAR', 'CUBIC', 'NEAREST'
+        self.dem_proj_method = self.inputs_cfg.get('INPUTS', 'dem_projection_method').upper()
+        self.dem_cs = self.inputs_cfg.getint('INPUTS', 'dem_cellsize')
+    
+        #
+        self.reset_dem_adj_flag = self.inputs_cfg.getboolean('INPUTS', 'reset_dem_adj_flag')
+        self.dem_adj_copy_field = self.inputs_cfg.get('INPUTS', 'dem_adj_copy_field')
+    
+        # Use PRISM temperature to set Jensen-Haise coefficient
+        self.calc_prism_jh_coef_flag = self.inputs_cfg.getboolean(
+            'INPUTS', 'calc_prism_jh_coef_flag')
+    
+        # Calculate flow accumulation weighted elevation
+        self.calc_flow_acc_dem_flag = self.inputs_cfg.getboolean(
+            'INPUTS', 'calc_flow_acc_dem_flag')
+        
+        # Check that either the original DEM raster exists
+        if not arcpy.Exists(self.dem_orig_path):
+            logging.error(
+                '\nERROR: DEM ({0}) raster does not exist\n'.format(self.dem_orig_path))
+            sys.exit()
+        
+        # Check other inputs
+        if self.dem_cs <= 0:
+            logging.error('\nERROR: DEM cellsize must be greater than 0')
+            sys.exit()
+            
+        dem_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
+        if self.dem_proj_method not in dem_proj_method_list:
+            logging.error('\nERROR: DEM projection method must be: {0}'.format(
+                ', '.join(dem_proj_method_list)))
+            sys.exit()
+            
+        if self.reset_dem_adj_flag:
+            logging.warning('\nWARNING: All values in {0} will be overwritten'.format(
+                self.dem_adj_field))
+            raw_input('  Press ENTER to continue')
+            
+        # Check that dem_adj_copy_field exists
+        if len(arcpy.ListFields(self.polygon_path, self.dem_adj_copy_field)) == 0:
+            logging.error('\nERROR: dem_adj_copy_field {0} does not exist\n'.format(
+                self.dem_adj_copy_field))
+            sys.exit()
+        
+        
 
 
 def next_row_col(flow_dir, cell):
@@ -478,7 +548,7 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         logging.debug('    Converting shapefile to raster')
         arcpy.FeatureToRaster_conversion(
             point_subset_path, hru_param.fid_field,
-            hru_raster_path, hru_param.cs)
+            hru_raster_path, hru_param.dem_cs)
 
         # Zonal stats
         logging.debug('    Calculating zonal stats')
@@ -896,12 +966,18 @@ def get_prism_data_name():
     return data_name
 
 
-def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
+def project_hru_extent_func(hru_extent, hru_sr,
                             target_extent, target_cs, target_sr):
     """"""
+    
+    # uses an abitrary cell size of 300 to create a polygon of the extent,
+    # one could also set step to ensure that there are a certain number of steps
+    # along the extent boundary
+    hru_cs=300
+    
     logging.debug('  Projecting extent')
     logging.debug('  HRU Extent:   {0}'.format(extent_string(hru_extent)))
-    logging.debug('  HRU cellsize: {0}'.format(hru_cs))
+#     logging.debug('  HRU cellsize: {0}'.format(hru_cs))
     logging.debug('  HRU spatref:  {0}'.format(hru_sr.name))
     logging.debug('  Target snap:     {0}'.format(target_extent.lowerLeft))
     logging.debug('  Target cellsize: {0}'.format(target_cs))
@@ -914,6 +990,7 @@ def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
         [hru_extent.XMax, hru_extent.YMin],
         [hru_extent.XMin, hru_extent.YMin],
         [hru_extent.XMin, hru_extent.YMax]]
+    
     # Add points between corners
     hru_points = []
     for point_a, point_b in zip(hru_corners[:-1], hru_corners[1:]):
@@ -923,6 +1000,7 @@ def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
         for x, y in zip(np.linspace(point_a[0], point_b[0], steps + 1),
                         np.linspace(point_a[1], point_b[1], steps + 1)):
             hru_points.append(arcpy.Point(x,y))
+            
     # Project all points to output spatial reference and get projected extent
     transform = transform_func(hru_sr, target_sr)
     if transform:
@@ -934,11 +1012,13 @@ def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
             arcpy.Array(hru_points), hru_sr).projectAs(target_sr).extent
     logging.debug('  Projected Extent: {0}'.format(
         extent_string(projected_extent)))
+    
     # Adjust extent to match snap
     projected_extent = adjust_extent_to_snap(
         projected_extent, target_extent.lowerLeft, target_cs, 'EXPAND', False)
     logging.debug('  Snapped Extent:   {0}'.format(
         extent_string(projected_extent)))
+    
     # Buffer extent 4 input cells
     # projected_extent = buffer_extent_func(projected_extent, 4 * target_cs)
     projected_extent = buffer_extent_func(
@@ -950,7 +1030,7 @@ def project_hru_extent_func(hru_extent, hru_cs, hru_sr,
 
 def project_raster_func(input_raster, output_raster, output_sr,
                         proj_method, input_cs, transform_str,
-                        reg_point, input_sr, hru_param):
+                        input_sr, hru_param):
     """"""
     # Input raster can be a raster object or a raster path
     # print isinstance(input_raster, Raster), isinstance(input_raster, str)
@@ -958,11 +1038,12 @@ def project_raster_func(input_raster, output_raster, output_sr,
         input_extent = Raster(input_raster).extent
     except:
         input_extent = input_raster.extent
+        
     # DEADBEEF - Arc10.2 ProjectRaster does not honor extent
     # Clip the input raster with the projected HRU extent first
     # Project extent from "output" to "input" to get clipping extent
     proj_extent = project_hru_extent_func(
-        hru_param.extent, hru_param.cs, output_sr,
+        hru_param.extent, output_sr,
         input_extent, input_cs, input_sr)
     # clip_path = output_raster.replace('.img', '_clip.img')
     clip_path = os.path.join('in_memory', 'clip_raster')
@@ -970,10 +1051,16 @@ def project_raster_func(input_raster, output_raster, output_sr,
     arcpy.Clip_management(
         input_raster, ' '.join(str(proj_extent).split()[:4]), clip_path)
     arcpy.ClearEnvironment('extent')
+    
     # Then project the clipped raster
-    arcpy.ProjectRaster_management(
-        clip_path, output_raster, output_sr, proj_method.upper(), input_cs,
-        transform_str, reg_point, input_sr)
+#     arcpy.ProjectRaster_management(
+#         clip_path, output_raster, output_sr, proj_method.upper(), input_cs,
+#         transform_str, reg_point, input_sr)
+    arcpy.ProjectRaster_management(in_raster=clip_path, out_raster=output_raster, 
+                                   out_coor_system=output_sr, resampling_type=proj_method.upper(),
+                                   cell_size=input_cs, geographic_transform=transform_str, 
+                                   in_coor_system=input_sr)
+    
     # Cleanup
     arcpy.Delete_management(clip_path)
 
