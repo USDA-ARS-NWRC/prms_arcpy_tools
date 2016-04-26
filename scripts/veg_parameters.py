@@ -395,6 +395,8 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
         arcpy.Delete_management(hru_polygon_layer)
         del hru_polygon_layer
 
+    logging.info('Done!')
+
 
 def get_remap_keys(remap_path):
     """"""

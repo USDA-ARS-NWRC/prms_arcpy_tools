@@ -122,7 +122,7 @@ def prism_4km_parameters(config_path, data_name='ALL',
     for data_name in data_name_list:
         logging.info('\n{0}'.format(data_name))
         prism_normal_re = re.compile(
-            'PRISM_(?P<type>%s)_30yr_normal_4kmM2_(?P<month>\d{2})_bil.bil$' % data_name,
+            'PRISM_(?P<type>%s)_30yr_normal_4kmM2_(?P<month>\d{2})_asc.asc$' % data_name,
             re.IGNORECASE)
 
         # Search all files & subfolders in prism folder
@@ -232,6 +232,8 @@ def prism_4km_parameters(config_path, data_name='ALL',
             ','.join(tmax_field_list), ','.join(tmin_field_list))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.jh_tmin_field, tmin_expr, 'PYTHON')
+        
+    loggin.info('Done!')
 
 
 def arg_parse():

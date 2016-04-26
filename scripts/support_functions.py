@@ -31,6 +31,7 @@ from support_functions import *
 class HRUParameters():
     """"""
     def __init__(self, config_path):
+        
         # Open input parameter config file
         inputs_cfg = ConfigParser.ConfigParser()
         try:
@@ -74,27 +75,27 @@ class HRUParameters():
         logging.debug('\nReading Field List File')
 
         # Read parameters from config file
-        self.polygon_path = inputs_cfg.get('INPUTS', 'hru_fishnet_path')
+        self.polygon_path = inputs_cfg.get('INPUTS', 'hru_path')
         self.point_path   = inputs_cfg.get('INPUTS', 'hru_centroid_path')
         self.sr_name = inputs_cfg.get('INPUTS', 'hru_projection')
-        self.cs      = inputs_cfg.getfloat('INPUTS', 'hru_cellsize')
-        self.ref_x   = inputs_cfg.getfloat('INPUTS', 'hru_ref_x')
-        self.ref_y   = inputs_cfg.getfloat('INPUTS', 'hru_ref_y')
-        self.ref_pnt = arcpy.Point(self.ref_x, self.ref_y)
+#         self.cs      = inputs_cfg.getfloat('INPUTS', 'hru_cellsize')
+#         self.ref_x   = inputs_cfg.getfloat('INPUTS', 'hru_ref_x')
+#         self.ref_y   = inputs_cfg.getfloat('INPUTS', 'hru_ref_y')
+#         self.ref_pnt = arcpy.Point(self.ref_x, self.ref_y)
         # self.ref_x   = inputs_cfg.getint('INPUTS', 'hru_ref_x')
         # self.ref_y   = inputs_cfg.getint('INPUTS', 'hru_ref_y')
-        self.buffer_cells = inputs_cfg.getint('INPUTS', 'hru_buffer_cells')
+#         self.buffer_cells = inputs_cfg.getint('INPUTS', 'hru_buffer_cells')
         self.snap_method = inputs_cfg.get('INPUTS', 'hru_param_snap_method')
         self.fid_field = inputs_cfg.get('INPUTS', 'orig_fid_field')
         self.type_field = fields_cfg.get('FIELDS', 'type_field')
 
-        # Check inputs
-        if self.cs <= 0:
-            logging.error('\nERROR: Fishnet cellsize must be greater than 0')
-            sys.exit()
-        if self.buffer_cells < 0:
-            logging.error('\nERROR: Buffer cells must be greater than 0')
-            sys.exit()
+#         # Check inputs
+#         if self.cs <= 0:
+#             logging.error('\nERROR: Fishnet cellsize must be greater than 0')
+#             sys.exit()
+#         if self.buffer_cells < 0:
+#             logging.error('\nERROR: Buffer cells must be greater than 0')
+#             sys.exit()
 
         #
         self.param_ws = inputs_cfg.get('INPUTS', 'parameter_folder')
@@ -120,10 +121,10 @@ class HRUParameters():
             self.scratch_ws = scratch_ws
 
         # Log input hru parameters
-        logging.info('  Fishnet cellsize:   {0}'.format(self.cs))
-        logging.info('  Fishnet ref. point: {0} {1}'.format(
-            self.ref_x, self.ref_y))
-        logging.debug('  Fishnet Buffer Cells: {0}'.format(self.buffer_cells))
+#         logging.info('  Fishnet cellsize:   {0}'.format(self.cs))
+#         logging.info('  Fishnet ref. point: {0} {1}'.format(
+#             self.ref_x, self.ref_y))
+#         logging.debug('  Fishnet Buffer Cells: {0}'.format(self.buffer_cells))
         # snap_pnt = arcpy.Point(self.ref_x, self.ref_y)
         # snap_pnt.X, snap_pnt.Y = self.ref_x, self.ref_y
 
@@ -132,17 +133,17 @@ class HRUParameters():
             hru_desc = arcpy.Describe(self.polygon_path)
             self.sr = hru_desc.spatialReference
             self.extent = round_extent(hru_desc.extent, 6)
-            logging.info('  Fishnet extent:     {0}'.format(extent_string(self.extent)))
-            logging.debug('  Fishnet spat. ref.: {0}'.format(self.sr.name))
-            logging.debug('  Fishnet GCS:        {0}'.format(self.sr.GCS.name))
+            logging.info('  HRU extent:     {0}'.format(extent_string(self.extent)))
+            logging.debug('  HRU spat. ref.: {0}'.format(self.sr.name))
+            logging.debug('  HRU GCS:        {0}'.format(self.sr.GCS.name))
 
-            # Check that the fishnet is snapped to the reference point
-            if not snapped(self.extent, self.ref_pnt, self.cs):
-                logging.error(
-                    ('\nWARNING: {0} does not appear to be snapped to the INI ' +
-                     'file reference point\n  This may be a rounding issue.').format(
-                        os.path.basename(self.polygon_path)))
-                raw_input('Press ENTER to continue')
+#             # Check that the HRU is snapped to the reference point
+#             if not snapped(self.extent, self.ref_pnt, self.cs):
+#                 logging.error(
+#                     ('\nWARNING: {0} does not appear to be snapped to the INI ' +
+#                      'file reference point\n  This may be a rounding issue.').format(
+#                         os.path.basename(self.polygon_path)))
+# #                 raw_input('Press ENTER to continue')
 
             # DEADBEEF - I'm not sure why I would adjust the extent
             # If the extent doesn't match the refence point, the script
@@ -153,13 +154,18 @@ class HRUParameters():
             #    hru_param_desc.extent, snap_pnt, self.cs, 'ROUND')
 
         # Some fields are dependent on the control flags
-        set_lake_flag = inputs_cfg.getboolean('INPUTS', 'set_lake_flag')
-        calc_flow_acc_dem_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_dem_flag')
-        calc_topo_index_flag = inputs_cfg.getboolean('INPUTS', 'calc_topo_index_flag')
-        clip_root_depth_flag = inputs_cfg.getboolean('INPUTS', 'clip_root_depth_flag')
+        try:
+            self.set_lake_flag = inputs_cfg.getboolean('INPUTS', 'set_lake_flag')
+        except:
+            logging.debug('  set_lake_flag = False')
+            self.set_lake_flag = False
+        
+        self.calc_flow_acc_dem_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_dem_flag')
+        self.calc_topo_index_flag = inputs_cfg.getboolean('INPUTS', 'calc_topo_index_flag')
+        self.clip_root_depth_flag = inputs_cfg.getboolean('INPUTS', 'clip_root_depth_flag')
         # set_ppt_zones_flag = inputs_cfg.getboolean('INPUTS', 'set_ppt_zones_flag')
-        calc_layer_thickness_flag = inputs_cfg.getboolean(
-            'INPUTS', 'calc_layer_thickness_flag')
+#         self.calc_layer_thickness_flag = inputs_cfg.getboolean(
+#             'INPUTS', 'calc_layer_thickness_flag')
 
         # Read in all field names
         self.id_field = fields_cfg.get('FIELDS', 'id_field')
@@ -170,7 +176,7 @@ class HRUParameters():
         self.dem_max_field = fields_cfg.get('FIELDS', 'dem_max_field')
         self.dem_min_field = fields_cfg.get('FIELDS', 'dem_min_field')
         self.dem_adj_field = fields_cfg.get('FIELDS', 'dem_adj_field')
-        if calc_flow_acc_dem_flag:
+        if self.calc_flow_acc_dem_flag:
             # self.dem_sum_field = 'DEM_SUM'
             # self.dem_count_field = 'DEM_COUNT'
             self.dem_sum_field = fields_cfg.get('FIELDS', 'dem_sum_field')
@@ -182,8 +188,8 @@ class HRUParameters():
             self.dem_flowacc_field = 'DEM_FLOW_AC'
         self.dem_sink8_field = fields_cfg.get('FIELDS', 'dem_sink8_field')
         self.dem_sink4_field = fields_cfg.get('FIELDS', 'dem_sink4_field')
-        self.crt_dem_field  = fields_cfg.get('FIELDS', 'crt_dem_field')
-        self.crt_fill_field = fields_cfg.get('FIELDS', 'crt_fill_field')
+#         self.crt_dem_field  = fields_cfg.get('FIELDS', 'crt_dem_field')
+#         self.crt_fill_field = fields_cfg.get('FIELDS', 'crt_fill_field')
         self.area_field = fields_cfg.get('FIELDS', 'area_field')
         self.elev_field = fields_cfg.get('FIELDS', 'elev_field')
         self.aspect_field = fields_cfg.get('FIELDS', 'aspect_field')
@@ -191,14 +197,14 @@ class HRUParameters():
         self.slope_rad_field = fields_cfg.get('FIELDS', 'slope_rad_field')
         self.slope_pct_field = fields_cfg.get('FIELDS', 'slope_pct_field')
         self.topo_index_field = fields_cfg.get('FIELDS', 'topo_index_field')
-        self.row_field = fields_cfg.get('FIELDS', 'row_field')
-        self.col_field = fields_cfg.get('FIELDS', 'col_field')
+#         self.row_field = fields_cfg.get('FIELDS', 'row_field')
+#         self.col_field = fields_cfg.get('FIELDS', 'col_field')
         self.x_field = fields_cfg.get('FIELDS', 'x_field')
         self.y_field = fields_cfg.get('FIELDS', 'y_field')
         self.lat_field = fields_cfg.get('FIELDS', 'lat_field')
         self.lon_field = fields_cfg.get('FIELDS', 'lon_field')
 
-        if set_lake_flag:
+        if self.set_lake_flag:
             self.lake_id_field = fields_cfg.get('FIELDS', 'lake_id_field')
             self.lake_area_field = fields_cfg.get('FIELDS', 'lake_area_field')
         else:
@@ -265,22 +271,41 @@ class HRUParameters():
         self.subbasin_field   = fields_cfg.get('FIELDS', 'subbasin_field')
         self.segbasin_field   = fields_cfg.get('FIELDS', 'segbasin_field')
         self.outflow_field    = fields_cfg.get('FIELDS', 'outflow_field')
+        self.hru_segment      = fields_cfg.get('FIELDS', 'hru_segment')
+        self.k_coef           = fields_cfg.get('FIELDS', 'k_coef')
+        self.obsin_segment    = fields_cfg.get('FIELDS', 'obsin_segment')
+        self.tosegment        = fields_cfg.get('FIELDS', 'tosegment')
+        self.x_coef           = fields_cfg.get('FIELDS', 'x_coef')
+
 
         # if set_ppt_zones_flag:
         self.ppt_zone_id_field = fields_cfg.get('FIELDS', 'ppt_zone_id_field')
 
-        # Calculate layer thickness and bottoms
-        if calc_layer_thickness_flag:
-            self.alluv_field = fields_cfg.get('FIELDS', 'alluv_field')
-            self.alluv_thick_field = fields_cfg.get('FIELDS', 'alluv_thick_field')
-            self.lay1_thick_field = fields_cfg.get('FIELDS', 'lay1_thick_field')
-            self.lay2_thick_field = fields_cfg.get('FIELDS', 'lay2_thick_field')
-            self.lay3_thick_field = fields_cfg.get('FIELDS', 'lay3_thick_field')
-            self.lay4_thick_field = fields_cfg.get('FIELDS', 'lay4_thick_field')
-            self.lay1_bottom_field = fields_cfg.get('FIELDS', 'lay1_bottom_field')
-            self.lay2_bottom_field = fields_cfg.get('FIELDS', 'lay2_bottom_field')
-            self.lay3_bottom_field = fields_cfg.get('FIELDS', 'lay3_bottom_field')
-            self.lay4_bottom_field = fields_cfg.get('FIELDS', 'lay4_bottom_field')
+#         # Calculate layer thickness and bottoms
+#         if self.calc_layer_thickness_flag:
+#             self.alluv_field = fields_cfg.get('FIELDS', 'alluv_field')
+#             self.alluv_thick_field = fields_cfg.get('FIELDS', 'alluv_thick_field')
+#             self.lay1_thick_field = fields_cfg.get('FIELDS', 'lay1_thick_field')
+#             self.lay2_thick_field = fields_cfg.get('FIELDS', 'lay2_thick_field')
+#             self.lay3_thick_field = fields_cfg.get('FIELDS', 'lay3_thick_field')
+#             self.lay4_thick_field = fields_cfg.get('FIELDS', 'lay4_thick_field')
+#             self.lay1_bottom_field = fields_cfg.get('FIELDS', 'lay1_bottom_field')
+#             self.lay2_bottom_field = fields_cfg.get('FIELDS', 'lay2_bottom_field')
+#             self.lay3_bottom_field = fields_cfg.get('FIELDS', 'lay3_bottom_field')
+#             self.lay4_bottom_field = fields_cfg.get('FIELDS', 'lay4_bottom_field')
+
+        
+        # save the config file
+        self.inputs_cfg = inputs_cfg
+        
+    def check_polygon_path(self):
+        """
+        Check that the polygon path exists 
+        """
+        if not arcpy.Exists(self.polygon_path):
+            logging.error(
+                '\nERROR: HRU ({0}) does not exist\n'.format(self.polygon_path))
+            sys.exit()
 
 
 def next_row_col(flow_dir, cell):
@@ -1009,7 +1034,7 @@ def zone_by_area_func(zone_path, zone_field, zone_value, hru_param_path,
     #    arcpy.AddField_management(zone_path, area_field, 'DOUBLE')
     #    cell_area_func(zone_path, area_field)
 
-    # Intersect the zone layer with the fishnet
+    # Intersect the zone layer with the HRU
     # zone_int_path = os.path.join('in_memory', 'hru_lakes')
     zone_int_path = zone_path.replace('.shp', '_intersect.shp')
     arcpy.Intersect_analysis(
@@ -1096,7 +1121,7 @@ def zone_by_centroid_func(zone_path, zone_field, zone_value,
         # Use zone_value field directly
         # zone_value_field = zone_value
 
-    # Intersect the zone layer with the fishnet
+    # Intersect the zone layer with the HRU
     # zone_int_path = os.path.join('in_memory', 'hru_ppt_zones')
     zone_int_path = zone_path.replace('.shp', '_intersect.shp')
     arcpy.Intersect_analysis(

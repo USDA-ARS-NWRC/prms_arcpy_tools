@@ -28,3 +28,9 @@
 /PRMS
 /shapefiles
 /soils
+
+/test_data
+
+.project
+.pydevproject
+

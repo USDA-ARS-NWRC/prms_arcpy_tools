@@ -26,7 +26,10 @@ from support_functions import *
 
 
 def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
-    """Calculate GSFLOW HRU Parameters
+    """Calculate PRMS HRU Parameters
+    
+    Modifies the hru_path shapefile and adds multiple new fields that will
+    be calculated in other functions
 
     Args:
         config_file (str): Project config file path
@@ -40,16 +43,16 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Initialize hru parameters class
     hru = HRUParameters(config_path)
 
-    # Open input parameter config file
-    inputs_cfg = ConfigParser.ConfigParser()
-    try:
-        inputs_cfg.readfp(open(config_path))
-    except:
-        logging.error('\nERROR: Config file could not be read, ' +
-                      'is not an input file, or does not exist\n' +
-                      'ERROR: config_file = {0}\n').format(config_path)
-        sys.exit()
-    logging.debug('\nReading Input File')
+#     # Open input parameter config file
+#     hru.inputs_cfg = ConfigParser.ConfigParser()
+#     try:
+#         hru.inputs_cfg.readfp(open(config_path))
+#     except:
+#         logging.error('\nERROR: Config file could not be read, ' +
+#                       'is not an input file, or does not exist\n' +
+#                       'ERROR: config_file = {0}\n').format(config_path)
+#         sys.exit()
+#     logging.debug('\nReading Input File')
 
     # Log DEBUG to file
     log_file_name = 'hru_parameters_log.txt'
@@ -58,36 +61,34 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nGSFLOW HRU Parameters')
+    logging.info('\nPRMS HRU Parameters')
 
     # Read parameters from config file
-    study_area_orig_path = inputs_cfg.get('INPUTS', 'study_area_path')
-    try:
-        set_lake_flag = inputs_cfg.getboolean('INPUTS', 'set_lake_flag')
-    except:
-        logging.debug('  set_lake_flag = False')
-        set_lake_flag = False
-    if set_lake_flag:
-        lake_orig_path = inputs_cfg.get('INPUTS', 'lake_path')
-        lake_zone_field = inputs_cfg.get('INPUTS', 'lake_zone_field')
-        lake_area_pct = inputs_cfg.getfloat('INPUTS', 'lake_area_pct')
+    study_area_orig_path = hru.inputs_cfg.get('INPUTS', 'study_area_path')
+#     try:
+#         set_lake_flag = hru.inputs_cfg.getboolean('INPUTS', 'set_lake_flag')
+#     except:
+#         logging.debug('  set_lake_flag = False')
+#         set_lake_flag = False
+    if hru.set_lake_flag:
+        lake_orig_path = hru.inputs_cfg.get('INPUTS', 'lake_path')
+        lake_zone_field = hru.inputs_cfg.get('INPUTS', 'lake_zone_field')
+        lake_area_pct = hru.inputs_cfg.getfloat('INPUTS', 'lake_area_pct')
 
     # Control flags
-    calc_flow_acc_dem_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_dem_flag')
-    calc_topo_index_flag = inputs_cfg.getboolean('INPUTS', 'calc_topo_index_flag')
-    clip_root_depth_flag = inputs_cfg.getboolean('INPUTS', 'clip_root_depth_flag')
-    # set_ppt_zones_flag = inputs_cfg.getboolean('INPUTS', 'set_ppt_zones_flag')
+#     calc_flow_acc_dem_flag = hru.inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_dem_flag')
+#     calc_topo_index_flag = hru.inputs_cfg.getboolean('INPUTS', 'calc_topo_index_flag')
+#     clip_root_depth_flag = hru.inputs_cfg.getboolean('INPUTS', 'clip_root_depth_flag')
+    # set_ppt_zones_flag = hru.inputs_cfg.getboolean('INPUTS', 'set_ppt_zones_flag')
     # Calculate layer thickness and bottoms
-    calc_layer_thickness_flag = inputs_cfg.getboolean('INPUTS', 'calc_layer_thickness_flag')
+#     calc_layer_thickness_flag = hru.inputs_cfg.getboolean('INPUTS', 'calc_layer_thickness_flag')
 
 
     # Check input paths
-    if not arcpy.Exists(hru.polygon_path):
-        logging.error(
-            '\nERROR: Fishnet ({0}) does not exist'.format(
-                hru.polygon_path))
-        sys.exit()
-    if set_lake_flag:
+    hru.check_polygon_path()
+    
+    # check lake paths
+    if hru.set_lake_flag:
         if not arcpy.Exists(lake_orig_path):
             logging.error(
                 '\nERROR: Lake layer ({0}) does not exist'.format(
@@ -129,6 +130,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     hru_temp_ws = os.path.join(hru.param_ws, 'hru_temp')
     if not os.path.isdir(hru_temp_ws):
         os.mkdir(hru_temp_ws)
+        
     # Output paths
     study_area_path = os.path.join(hru_temp_ws, 'study_area.shp')
     lake_path = os.path.join(hru_temp_ws, 'lakes.shp')
@@ -165,6 +167,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 update_c.insertRow(
                     [hru_centroid[0], hru_centroid[1], hru_centroid[0]])
         del hru_centroid_list
+        
     # Check existing HRU points
     else:
         # Remove any extra fields
@@ -179,6 +182,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
                 logging.debug('    {0}'.format(field))
                 try: arcpy.DeleteField_management(hru.point_path, field)
                 except: continue
+                
         # Save original FID
         if len(arcpy.ListFields(hru.point_path, hru.fid_field)) == 0:
             arcpy.AddField_management(
@@ -202,24 +206,24 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.dem_min_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_max_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_adj_field, 'DOUBLE')
-    if calc_flow_acc_dem_flag:
+    if hru.calc_flow_acc_dem_flag:
         add_field_func(hru.polygon_path, hru.dem_flowacc_field, 'DOUBLE')
         add_field_func(hru.polygon_path, hru.dem_sum_field, 'DOUBLE')
         add_field_func(hru.polygon_path, hru.dem_count_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_sink8_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_sink4_field, 'DOUBLE')
-    add_field_func(hru.polygon_path, hru.crt_dem_field, 'DOUBLE')
-    add_field_func(hru.polygon_path, hru.crt_fill_field, 'DOUBLE')
+#     add_field_func(hru.polygon_path, hru.crt_dem_field, 'DOUBLE')
+#     add_field_func(hru.polygon_path, hru.crt_fill_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.elev_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.area_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.aspect_field, 'LONG')
     add_field_func(hru.polygon_path, hru.slope_deg_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.slope_rad_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.slope_pct_field, 'DOUBLE')
-    if calc_topo_index_flag:
+    if hru.calc_topo_index_flag:
         add_field_func(hru.polygon_path, hru.topo_index_field, 'LONG')
-    add_field_func(hru.polygon_path, hru.row_field, 'LONG')
-    add_field_func(hru.polygon_path, hru.col_field, 'LONG')
+#     add_field_func(hru.polygon_path, hru.row_field, 'LONG')
+#     add_field_func(hru.polygon_path, hru.col_field, 'LONG')
     add_field_func(hru.polygon_path, hru.x_field, 'LONG')
     add_field_func(hru.polygon_path, hru.y_field, 'LONG')
     add_field_func(hru.polygon_path, hru.lat_field, 'DOUBLE')
@@ -313,17 +317,17 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             hru.polygon_path, 'PPT_RT_{0}'.format(month), 'FLOAT')
 
     # Layer thickness and bottom fields
-    if calc_layer_thickness_flag:
-        add_field_func(hru.polygon_path, hru.alluv_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.alluv_thick_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay1_thick_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay2_thick_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay3_thick_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay4_thick_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay1_bottom_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay2_bottom_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay3_bottom_field, 'FLOAT')
-        add_field_func(hru.polygon_path, hru.lay4_bottom_field, 'FLOAT')
+#     if hru.calc_layer_thickness_flag:
+#         add_field_func(hru.polygon_path, hru.alluv_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.alluv_thick_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay1_thick_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay2_thick_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay3_thick_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay4_thick_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay1_bottom_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay2_bottom_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay3_bottom_field, 'FLOAT')
+#         add_field_func(hru.polygon_path, hru.lay4_bottom_field, 'FLOAT')
 
 
     # Id field is added by default to new fishnets
@@ -332,10 +336,8 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     logging.info('\nCalculating parameters')
     # Keep original FID for subsetting in zonal stats
-    logging.info('  Saving original HRU FID to {0}'.format(
-        hru.fid_field))
-    arcpy.CalculateField_management(
-        hru.polygon_path, hru.fid_field, '!FID!', 'PYTHON')
+    logging.info('  Saving original HRU FID to {0}'.format(hru.fid_field))
+    arcpy.CalculateField_management(hru.polygon_path, hru.fid_field, '!FID!', 'PYTHON')
 
     # Cell X/Y
     logging.info('  Calculating cell X/Y')
@@ -343,15 +345,14 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Create unique ID, start at top left corner, work down rows
     # Row/Col numbered from top left corner (1's based numbering)
-    logging.info('  Calculating cell ID/row/col')
-    cell_id_col_row_func(
-        hru.polygon_path, hru.id_field, hru.col_field, hru.row_field,
-        hru.extent, hru.cs)
+#     logging.info('  Calculating cell ID/row/col')
+#     cell_id_col_row_func(
+#         hru.polygon_path, hru.id_field, hru.col_field, hru.row_field,
+#         hru.extent, hru.cs)
 
     # Cell Lat/Lon
     logging.info('  Calculating cell lat/lon')
-    cell_lat_lon_func(
-        hru.polygon_path, hru.lat_field, hru.lon_field, hru.sr.GCS)
+    cell_lat_lon_func(hru.polygon_path, hru.lat_field, hru.lon_field, hru.sr.GCS)
 
     # Cell Area
     logging.info('  Calculating cell area (acres)')
@@ -360,17 +361,16 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Reset HRUTYPE_IN / HRU_TYPE
     logging.info('\nResetting {0} to 0'.format(hru.type_in_field))
-    arcpy.CalculateField_management(
-        hru.polygon_path, hru.type_in_field, 0, 'PYTHON')
+    arcpy.CalculateField_management(hru.polygon_path, hru.type_in_field, 0, 'PYTHON')
     logging.info('Resetting {0} to 0'.format(hru.type_field))
-    arcpy.CalculateField_management(
-        hru.polygon_path, hru.type_field, 0, 'PYTHON')
+    arcpy.CalculateField_management(hru.polygon_path, hru.type_field, 0, 'PYTHON')
+    
     # Reset LAKE_ID
-    if set_lake_flag:
+    if hru.set_lake_flag:
         logging.info('Resetting {0} to 0'.format(hru.lake_id_field))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.lake_id_field, 0, 'PYTHON')
-    if set_lake_flag:
+    
         logging.info('Resetting {0} to 0'.format(hru.lake_area_field))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.lake_area_field, 0, 'PYTHON')
@@ -384,6 +384,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         study_area_sr.name))
     logging.debug('  Study area GCS:         {0}'.format(
         study_area_sr.GCS.name))
+    
     # If study area spat_ref doesn't match hru_param spat_ref
     # Project study area to hru_param spat ref
     # Otherwise, read study_area directly
@@ -404,7 +405,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         hru.polygon_path, hru.point_path, hru)
 
     # Calculate HRU Type for lakes (HRU_TYPE = 2)
-    if set_lake_flag:
+    if hru.set_lake_flag:
         logging.info('\nCalculating cell HRU Type & ID for lakes')
         lake_layer = 'lake_layer'
         lake_desc = arcpy.Describe(lake_orig_path)
@@ -466,6 +467,8 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Cleanup
     del study_area_desc, study_area_sr
+    
+    logging.info('Done!')
 
 
 def cell_xy_func(hru_param_path, x_field, y_field):

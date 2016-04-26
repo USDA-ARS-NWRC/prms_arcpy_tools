@@ -549,6 +549,8 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
         arcpy.Delete_management(hru_polygon_layer)
         del hru_polygon_layer
+        
+    logging.info('Done!')
 
 
 def field_stat_func(input_path, value_field, stat='MAXIMUM'):

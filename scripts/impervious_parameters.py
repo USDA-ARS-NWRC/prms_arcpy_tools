@@ -163,6 +163,8 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
         arcpy.CalculateField_management(
             hru.polygon_path, hru.carea_max_field,
             '!{0}!'.format(hru.imperv_pct_field), 'PYTHON')
+        
+    logging.info('Done!')
 
 
 def arg_parse():

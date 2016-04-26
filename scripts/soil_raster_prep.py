@@ -320,6 +320,8 @@ def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
             nibble_obj = 0.001 * Nibble(input_obj, mask_obj, 'ALL_VALUES')
             nibble_obj.save(soil_raster_path)
             arcpy.BuildPyramids_management(soil_raster_path)
+            
+    logging.info('Done!')
 
 
 def arg_parse():

@@ -425,6 +425,8 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #        hru_polygon_layer, hru.slowcoef_lin_field, 0, 'PYTHON')
     #    arcpy.Delete_management(hru_polygon_layer)
     #    del hru_polygon_layer
+    
+    logging.info('Done!')
 
 
 def arg_parse():

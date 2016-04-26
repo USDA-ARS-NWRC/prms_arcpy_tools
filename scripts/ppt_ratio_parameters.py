@@ -338,6 +338,8 @@ def ppt_ratio_parameters(config_path, overwrite_flag=False, debug_flag=False):
                             ppt_ratio_list[i] * row[ppt_i] / ppt_obs_list[i])
                 u_cursor.updateRow(row)
             del row
+            
+    logging.info('Done!')
 
 
 def arg_parse():
