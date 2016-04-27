@@ -338,7 +338,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Calculate DEM zonal statistics
     logging.info('\nCalculating DEM zonal statistics')
-    zonal_stats_func(zs_dem_dict, hru.polygon_path, hru.point_path, hru)
+    zonal_stats_func(zs_dem_dict, hru.polygon_path, hru)
 
     # Reset DEM_MEDIAN
     # logging.info('\nCalculating {0}'.format(hru.dem_median_field))

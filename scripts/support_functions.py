@@ -315,8 +315,50 @@ class HRUParameters():
         
         # Remap
         self.remap_ws = self.inputs_cfg.get('INPUTS', 'remap_folder')
-        self.aspect_remap_name = self.inputs_cfg.get('INPUTS', 'aspect_remap')
-        self.temp_adj_remap_name = self.inputs_cfg.get('INPUTS', 'temp_adj_remap')
+        try:
+            self.aspect_remap_name = self.inputs_cfg.get('INPUTS', 'aspect_remap')
+        except:
+            self.aspect_remap_name = None
+            
+        try:
+            self.temp_adj_remap_name = self.inputs_cfg.get('INPUTS', 'temp_adj_remap')
+        except:
+            self.temp_adj_remap_name = None
+            
+        try:
+            self.cov_type_remap_name = self.inputs_cfg.get('INPUTS', 'cov_type_remap')
+        except:
+            self.cov_type_remap_name = None
+            
+        try:
+            self.covden_sum_remap_name = self.inputs_cfg.get('INPUTS', 'covden_sum_remap')
+        except:
+            self.covden_sum_remap_name = None
+            
+        try:
+            self.covden_win_remap_name = self.inputs_cfg.get('INPUTS', 'covden_win_remap')
+        except:
+            self.covden_win_remap_name = None
+            
+        try:
+            self.snow_intcp_remap_name = self.inputs_cfg.get('INPUTS', 'snow_intcp_remap')
+        except:
+            self.snow_intcp_remap_name = None
+            
+        try:
+            self.srain_intcp_remap_name = self.inputs_cfg.get('INPUTS', 'srain_intcp_remap')
+        except:
+            self.srain_intcp_remap_name = None
+            
+        try:
+            self.wrain_intcp_remap_name = self.inputs_cfg.get('INPUTS', 'wrain_intcp_remap')
+        except:
+            self.wrain_intcp_remap_name = None
+            
+        try: 
+            self.root_depth_remap_name = self.inputs_cfg.get('INPUTS', 'root_depth_remap')
+        except:
+            self.root_depth_remap_name = None
         
         # Check that remap folder is valid
         if not os.path.isdir(self.remap_ws):
@@ -375,6 +417,57 @@ class HRUParameters():
                 self.dem_adj_copy_field))
             sys.exit()
         
+        
+    def read_veg_parameters(self):
+        """
+        Read the vegetation parameters from the config file
+        """
+        
+        # Landfire Vegetation Type
+        self.veg_type_orig_path = self.inputs_cfg.get('INPUTS', 'veg_type_orig_path')
+        self.veg_type_cs = self.inputs_cfg.getint('INPUTS', 'veg_type_cellsize')
+        try:
+            self.veg_type_field = self.inputs_cfg.get('INPUTS', 'veg_type_field')
+        except:
+            self.veg_type_field = None
+    
+        # Landfire Vegetation Cover
+        self.veg_cover_orig_path = self.inputs_cfg.get('INPUTS', 'veg_cover_orig_path')
+        self.veg_cover_cs = self.inputs_cfg.getint('INPUTS', 'veg_cover_cellsize')
+        
+        # Check that either the original vegetation raster exist
+        if not arcpy.Exists(self.veg_cover_orig_path):
+            logging.error(
+                '\nERROR: Vegetation cover raster does not exist')
+            sys.exit()
+        if not arcpy.Exists(self.veg_type_orig_path):
+            logging.error(
+                '\nERROR: Vegetation type raster does not exist')
+            sys.exit()
+            
+        # Vegetation cover can be set from another field in the raster
+        # This is mostly for US_120EVT
+        if not self.veg_type_field:
+            logging.info('\n  Using VALUE field to set vegetation type')
+            veg_type_field = 'VALUE'
+        elif len(arcpy.ListFields(self.veg_type_orig_path, self.veg_type_field)) == 0:
+            logging.info(
+                ('  veg_type_field {0} does not exist\n  Using VALUE ' +
+                 'field to set vegetation type').format(veg_type_field))
+            veg_type_field = 'VALUE'
+        elif arcpy.ListFields(self.veg_type_orig_path, self.veg_type_field)[0].type not in ['Integer', 'SmallInteger']:
+            logging.info(
+                ('  veg_type_field {0} is not an integer type\n  Using VALUE ' +
+                 'field to set vegetation type').format(self.veg_type_field))
+            self.veg_type_field = 'VALUE'
+            
+        # Check other inputs
+        if self.veg_type_cs <= 0:
+            logging.error('\nERROR: Veg. type cellsize must be greater than 0')
+            sys.exit()
+        if self.veg_cover_cs <= 0:
+            logging.error('\nERROR: Veg. cover cellsize must be greater than 0')
+            sys.exit()
         
 
 
@@ -475,9 +568,16 @@ def valid_raster_func(raster_path, raster_name, hru_param, cs=10):
         return True
 
 
-def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
+def zonal_stats_func(zs_dict, polygon_path, hru_param,
                      nodata_value=-999, default_value=0):
-    """"""
+    """
+    Calculate zonal statistics for each HRU
+    
+    - Get subset of HRU polygons
+    - Zonal stats by table based on polygons
+    - Add the zonal stats back to the HRU polygons
+    """
+    
     for zs_field, (raster_path, zs_stat) in sorted(zs_dict.items()):
         logging.info('  {0}: {1}'.format(zs_field, zs_stat))
         logging.info('    {0}'.format(raster_path))
@@ -496,27 +596,29 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
         logging.error(
             '\nERROR: HRU centroids  is not projected (i.e. does not have a prj file)')
         sys.exit()
-    if arcpy.Describe(point_path).spatialReference.name == 'Unknown':
-        logging.error(
-            '\nERROR: HRU centroids does not appear to be projected (or does not have a prj file)' +
-            '\nERROR: Try deleting the centroids (i.e. "_label.shp") and ' +
-            'rerunning hru_parameters.py\n')
-        sys.exit()
+        
+#     if arcpy.Describe(point_path).spatialReference.name == 'Unknown':
+#         logging.error(
+#             '\nERROR: HRU centroids does not appear to be projected (or does not have a prj file)' +
+#             '\nERROR: Try deleting the centroids (i.e. "_label.shp") and ' +
+#             'rerunning hru_parameters.py\n')
+#         sys.exit()
 
     # Check that ORIG_FID is in point_path (HRU centroids)
-    if len(arcpy.ListFields(point_path, hru_param.fid_field)) == 0:
+    if len(arcpy.ListFields(polygon_path, hru_param.fid_field)) == 0:
         logging.error(
-            ('\nERROR: HRU centroids does not have the field: {0}' +
+            ('\nERROR: HRU polygons does not have the field: {0}' +
              '\nERROR: Try deleting the centroids (i.e. "_label.shp") and ' +
              'rerunning hru_parameters.py\n').format(hru_param.fid_field))
         sys.exit()
 
     # Check for duplicate ORIG_FID values
-    hru_param_count = int(arcpy.GetCount_management(point_path).getOutput(0))
-    if field_duplicate_check(point_path, hru_param.fid_field, hru_param_count):
+    hru_param_count = int(arcpy.GetCount_management(polygon_path).getOutput(0))
+    if field_duplicate_check(polygon_path, hru_param.fid_field, hru_param_count):
         logging.error(
             ('\nERROR: There are duplicate {0} values\n').format(hru_param.fid_field))
         sys.exit()
+        
     # DEADBEEF - remove once field_duplicate_check() is full developed
     # fid_list = [r[0] for r in arcpy.da.SearchCursor(point_path, [hru_param.fid_field])]
     # if len(fid_list) != len(set(fid_list)):
@@ -525,8 +627,10 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
     #    sys.exit()
 
     # Create memory objects
-    point_subset_path = os.path.join('in_memory', 'point_subset')
+    polygon_subset_path = os.path.join('in_memory', 'polygon_subset')
     hru_raster_path = os.path.join('in_memory', 'hru_raster')
+#     polygon_subset_path = os.path.join(os.path.join(hru_param.param_ws, 'dem_rasters'), 'polygon_subset.shp')
+#     hru_raster_path = os.path.join(os.path.join(hru_param.param_ws, 'dem_rasters'), 'hru_raster')
     # point_subset_path = os.path.join(env.scratchWorkspace, 'point_subset.shp')
     # hru_raster_path = os.path.join(env.scratchWorkspace, 'hru_raster.img')
     # Set environment parameters for polygon to raster conversion
@@ -538,17 +642,19 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
     block_size = 65000
     for i, x in enumerate(xrange(0, hru_param_count, block_size)):
         logging.info('  FIDS: {0}-{1}'.format(x, x + block_size))
+        
         # Select a subset of the cell centroids
         logging.debug('    Selecting FID subset')
         subset_str = '"{0}" >= {1} AND "{0}" < {2}'.format(
             hru_param.fid_field, x, x + block_size)
         arcpy.Select_analysis(
-            point_path, point_subset_path, subset_str)
+            polygon_path, polygon_subset_path, subset_str)
+        
         # Convert points subset to raster
-        logging.debug('    Converting shapefile to raster')
-        arcpy.FeatureToRaster_conversion(
-            point_subset_path, hru_param.fid_field,
-            hru_raster_path, hru_param.dem_cs)
+#         logging.debug('    Converting shapefile to raster')
+#         arcpy.FeatureToRaster_conversion(
+#             polygon_subset_path, hru_param.fid_field,
+#             hru_raster_path, hru_param.dem_cs)
 
         # Zonal stats
         logging.debug('    Calculating zonal stats')
@@ -558,11 +664,12 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
             logging.info('    {0}: {1}'.format(zs_stat.upper(), zs_name))
             # For some reason with 10.2, ZS doesn't work with cs at HRU cs
             env.cellSize = Raster(raster_path).meanCellWidth
+            
             # Calculate zonal statistics
             zs_table = os.path.join('in_memory', zs_name)
-            # zs_table = os.path.join(env.scratchWorkspace, zs_name+'.dbf')
+#             zs_table = os.path.join(hru_param.param_ws, 'dem_rasters', zs_name)
             zs_obj = ZonalStatisticsAsTable(
-                hru_raster_path, 'Value', raster_path,
+                polygon_subset_path, hru_param.fid_field, raster_path,
                 zs_table, 'DATA', zs_stat.upper())
 
             # Read values from points
@@ -606,8 +713,8 @@ def zonal_stats_func(zs_dict, polygon_path, point_path, hru_param,
 
         # Cleanup
         del data_dict
-        if arcpy.Exists(point_subset_path):
-            arcpy.Delete_management(point_subset_path)
+        if arcpy.Exists(polygon_subset_path):
+            arcpy.Delete_management(polygon_subset_path)
         if arcpy.Exists(hru_raster_path):
             arcpy.Delete_management(hru_raster_path)
 

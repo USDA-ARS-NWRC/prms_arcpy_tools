@@ -38,15 +38,15 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Initialize hru_parameters class
     hru = HRUParameters(config_path)
 
-    # Open input parameter config file
-    inputs_cfg = ConfigParser.ConfigParser()
-    try:
-        inputs_cfg.readfp(open(config_path))
-    except:
-        logging.error('\nERROR: Config file could not be read, ' +
-                      'is not an input file, or does not exist\n' +
-                      'ERROR: config_file = {0}\n').format(config_path)
-        sys.exit()
+#     # Open input parameter config file
+#     hru.inputs_cfg = ConfigParser.ConfigParser()
+#     try:
+#         hru.inputs_cfg.readfp(open(config_path))
+#     except:
+#         logging.error('\nERROR: Config file could not be read, ' +
+#                       'is not an input file, or does not exist\n' +
+#                       'ERROR: config_file = {0}\n').format(config_path)
+#         sys.exit()
 
     # Log DEBUG to file
     log_file_name = 'veg_parameters_log.txt'
@@ -58,73 +58,64 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     logging.info('\nGSFLOW Vegetation Parameters')
 
     # Landfire Vegetation Type
-    veg_type_orig_path = inputs_cfg.get('INPUTS', 'veg_type_orig_path')
-    veg_type_cs = inputs_cfg.getint('INPUTS', 'veg_type_cellsize')
-    try:
-        veg_type_field = inputs_cfg.get('INPUTS', 'veg_type_field')
-    except:
-        veg_type_field = None
-
-    # Landfire Vegetation Cover
-    veg_cover_orig_path = inputs_cfg.get('INPUTS', 'veg_cover_orig_path')
-    veg_cover_cs = inputs_cfg.getint('INPUTS', 'veg_cover_cellsize')
-
+    hru.read_veg_parameters()
+    hru.dem_cs = hru.veg_type_cs # assume a cell size for the zonal statistics
+    
     # Remap
-    remap_ws = inputs_cfg.get('INPUTS', 'remap_folder')
-    aspect_remap_name = inputs_cfg.get('INPUTS', 'aspect_remap')
-    temp_adj_remap_name = inputs_cfg.get('INPUTS', 'temp_adj_remap')
-    cov_type_remap_name = inputs_cfg.get('INPUTS', 'cov_type_remap')
-    covden_sum_remap_name = inputs_cfg.get('INPUTS', 'covden_sum_remap')
-    covden_win_remap_name = inputs_cfg.get('INPUTS', 'covden_win_remap')
-    snow_intcp_remap_name = inputs_cfg.get('INPUTS', 'snow_intcp_remap')
-    srain_intcp_remap_name = inputs_cfg.get('INPUTS', 'srain_intcp_remap')
-    wrain_intcp_remap_name = inputs_cfg.get('INPUTS', 'wrain_intcp_remap')
-    root_depth_remap_name = inputs_cfg.get('INPUTS', 'root_depth_remap')
+    hru.read_remap_parameters()
+#     remap_ws = hru.inputs_cfg.get('INPUTS', 'remap_folder')
+#     aspect_remap_name = hru.inputs_cfg.get('INPUTS', 'aspect_remap')
+#     temp_adj_remap_name = hru.inputs_cfg.get('INPUTS', 'temp_adj_remap')
+#     cov_type_remap_name = hru.inputs_cfg.get('INPUTS', 'cov_type_remap')
+#     covden_sum_remap_name = hru.inputs_cfg.get('INPUTS', 'covden_sum_remap')
+#     covden_win_remap_name = hru.inputs_cfg.get('INPUTS', 'covden_win_remap')
+#     snow_intcp_remap_name = hru.inputs_cfg.get('INPUTS', 'snow_intcp_remap')
+#     srain_intcp_remap_name = hru.inputs_cfg.get('INPUTS', 'srain_intcp_remap')
+#     wrain_intcp_remap_name = hru.inputs_cfg.get('INPUTS', 'wrain_intcp_remap')
+#     root_depth_remap_name = hru.inputs_cfg.get('INPUTS', 'root_depth_remap')
 
     # Check input paths
-    if not arcpy.Exists(hru.polygon_path):
-        logging.error(
-            '\nERROR: Fishnet ({0}) does not exist'.format(
-                hru.polygon_path))
-        sys.exit()
-    # Check that either the original vegetation raster exist
-    if not arcpy.Exists(veg_cover_orig_path):
-        logging.error(
-            '\nERROR: Vegetation cover raster does not exist')
-        sys.exit()
-    if not arcpy.Exists(veg_type_orig_path):
-        logging.error(
-            '\nERROR: Vegetation type raster does not exist')
-        sys.exit()
-    # Vegetation cover can be set from another field in the raster
-    # This is mostly for US_120EVT
-    if not veg_type_field:
-        logging.info('\n  Using VALUE field to set vegetation type')
-        veg_type_field = 'VALUE'
-    elif len(arcpy.ListFields(veg_type_orig_path, veg_type_field)) == 0:
-        logging.info(
-            ('  veg_type_field {0} does not exist\n  Using VALUE ' +
-             'field to set vegetation type').format(veg_type_field))
-        veg_type_field = 'VALUE'
-    elif arcpy.ListFields(veg_type_orig_path, veg_type_field)[0].type not in ['Integer', 'SmallInteger']:
-        logging.info(
-            ('  veg_type_field {0} is not an integer type\n  Using VALUE ' +
-             'field to set vegetation type').format(veg_type_field))
-        veg_type_field = 'VALUE'
+    hru.check_polygon_path()
+        
+#     # Check that either the original vegetation raster exist
+#     if not arcpy.Exists(veg_cover_orig_path):
+#         logging.error(
+#             '\nERROR: Vegetation cover raster does not exist')
+#         sys.exit()
+#     if not arcpy.Exists(veg_type_orig_path):
+#         logging.error(
+#             '\nERROR: Vegetation type raster does not exist')
+#         sys.exit()
+#     # Vegetation cover can be set from another field in the raster
+#     # This is mostly for US_120EVT
+#     if not veg_type_field:
+#         logging.info('\n  Using VALUE field to set vegetation type')
+#         veg_type_field = 'VALUE'
+#     elif len(arcpy.ListFields(veg_type_orig_path, veg_type_field)) == 0:
+#         logging.info(
+#             ('  veg_type_field {0} does not exist\n  Using VALUE ' +
+#              'field to set vegetation type').format(veg_type_field))
+#         veg_type_field = 'VALUE'
+#     elif arcpy.ListFields(veg_type_orig_path, veg_type_field)[0].type not in ['Integer', 'SmallInteger']:
+#         logging.info(
+#             ('  veg_type_field {0} is not an integer type\n  Using VALUE ' +
+#              'field to set vegetation type').format(veg_type_field))
+#         veg_type_field = 'VALUE'
 
-    # Check that remap folder is valid
-    if not os.path.isdir(remap_ws):
-        logging.error('\nERROR: Remap folder does not exist')
-        sys.exit()
+#     # Check that remap folder is valid
+#     if not os.path.isdir(remap_ws):
+#         logging.error('\nERROR: Remap folder does not exist')
+#         sys.exit()
+        
     # Check that remap files exist
     # Check remap files comment style
-    cov_type_remap_path = os.path.join(remap_ws, cov_type_remap_name)
-    covden_sum_remap_path = os.path.join(remap_ws, covden_sum_remap_name)
-    covden_win_remap_path = os.path.join(remap_ws, covden_win_remap_name)
-    snow_intcp_remap_path = os.path.join(remap_ws, snow_intcp_remap_name)
-    srain_intcp_remap_path = os.path.join(remap_ws, srain_intcp_remap_name)
-    wrain_intcp_remap_path = os.path.join(remap_ws, wrain_intcp_remap_name)
-    root_depth_remap_path = os.path.join(remap_ws, root_depth_remap_name)
+    cov_type_remap_path = os.path.join(hru.remap_ws, hru.cov_type_remap_name)
+    covden_sum_remap_path = os.path.join(hru.remap_ws, hru.covden_sum_remap_name)
+    covden_win_remap_path = os.path.join(hru.remap_ws, hru.covden_win_remap_name)
+    snow_intcp_remap_path = os.path.join(hru.remap_ws, hru.snow_intcp_remap_name)
+    srain_intcp_remap_path = os.path.join(hru.remap_ws, hru.srain_intcp_remap_name)
+    wrain_intcp_remap_path = os.path.join(hru.remap_ws, hru.wrain_intcp_remap_name)
+    root_depth_remap_path = os.path.join(hru.remap_ws, hru.root_depth_remap_name)
     remap_path_list = [
         cov_type_remap_path, covden_sum_remap_path, covden_win_remap_path,
         snow_intcp_remap_path, srain_intcp_remap_path,
@@ -155,18 +146,19 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #    logging.error('\nERROR: Root depth remap file does not exist')
     #    sys.exit()
 
-    # Check other inputs
-    if veg_type_cs <= 0:
-        logging.error('\nERROR: Veg. type cellsize must be greater than 0')
-        sys.exit()
-    if veg_cover_cs <= 0:
-        logging.error('\nERROR: Veg. cover cellsize must be greater than 0')
-        sys.exit()
+#     # Check other inputs
+#     if hru.veg_type_cs <= 0:
+#         logging.error('\nERROR: Veg. type cellsize must be greater than 0')
+#         sys.exit()
+#     if hru.veg_cover_cs <= 0:
+#         logging.error('\nERROR: Veg. cover cellsize must be greater than 0')
+#         sys.exit()
 
     # Build output folders if necesssary
     veg_temp_ws = os.path.join(hru.param_ws, 'veg_rasters')
     if not os.path.isdir(veg_temp_ws):
         os.mkdir(veg_temp_ws)
+        
     # Output paths
     veg_cover_path = os.path.join(veg_temp_ws, 'veg_cover.img')
     veg_type_path = os.path.join(veg_temp_ws, 'veg_type.img')
@@ -202,12 +194,12 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Check that remaps have all necessary values
     logging.info('\nChecking remap tables against all raster cells')
     logging.info('  (i.e. even those outside the study area)')
-    remap_check_func(cov_type_remap_path, veg_type_orig_path)
-    remap_check_func(covden_sum_remap_path, veg_cover_orig_path)
-    remap_check_func(snow_intcp_remap_path, veg_type_orig_path)
-    remap_check_func(srain_intcp_remap_path, veg_type_orig_path)
-    remap_check_func(wrain_intcp_remap_path, veg_type_orig_path)
-    remap_check_func(root_depth_remap_path, veg_type_orig_path)
+    remap_check_func(cov_type_remap_path, hru.veg_type_orig_path)
+    remap_check_func(covden_sum_remap_path, hru.veg_cover_orig_path)
+    remap_check_func(snow_intcp_remap_path, hru.veg_type_orig_path)
+    remap_check_func(srain_intcp_remap_path, hru.veg_type_orig_path)
+    remap_check_func(wrain_intcp_remap_path, hru.veg_type_orig_path)
+    remap_check_func(root_depth_remap_path, hru.veg_type_orig_path)
 
 
     # Assume all vegetation rasters will need to be rebuilt
@@ -216,10 +208,12 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Project/clip veg cover to match HRU
     logging.info('\nProjecting/clipping vegetation cover raster')
-    veg_cover_orig_sr = Raster(veg_cover_orig_path).spatialReference
+    veg_cover_orig_sr = Raster(hru.veg_cover_orig_path).spatialReference
+    
     # Remove existing clipped/projected veg cover raster
     if arcpy.Exists(veg_cover_path):
         arcpy.Delete_management(veg_cover_path)
+        
     # Set preferred transforms
     transform_str = transform_func(hru.sr, veg_cover_orig_sr)
     logging.debug('  Transform:{0}'.format(transform_str))
@@ -228,9 +222,10 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Project veg cover
     # DEADBEEF - Arc10.2 ProjectRaster does not extent
     project_raster_func(
-        veg_cover_orig_path, veg_cover_path, hru.sr,
-        'NEAREST', veg_cover_cs, transform_str,
-        '{0} {1}'.format(hru.ref_x, hru.ref_y), veg_cover_orig_sr, hru)
+        hru.veg_cover_orig_path, veg_cover_path, hru.sr,
+        'NEAREST', hru.veg_cover_cs, transform_str,
+        veg_cover_orig_sr, hru)
+    
     # env.extent = hru.extent
     # arcpy.ProjectRaster_management(
     #    veg_cover_orig_path, veg_cover_path, hru.sr,
@@ -242,29 +237,33 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Project/clip veg type to match HRU
     logging.info('Projecting/clipping vegetation type raster')
-    veg_type_orig_sr = Raster(veg_type_orig_path).spatialReference
+    veg_type_orig_sr = Raster(hru.veg_type_orig_path).spatialReference
+    
     # Remove existing clipped/projected veg type raster
     if arcpy.Exists(veg_type_path):
         arcpy.Delete_management(veg_type_path)
+        
     # Set preferred transforms
     transform_str = transform_func(hru.sr, veg_type_orig_sr)
     logging.debug('  Transform: {0}'.format(transform_str))
     logging.debug('  Projection method: NEAREST')
+    
     # Use a different field to calculate vegetation type
-    if veg_type_field != 'VALUE':
+    if hru.veg_type_field != 'VALUE':
         logging.info(
             '  Calculating vegetation type from {0} field'.format(
-                veg_type_field))
-        veg_type_obj = Lookup(veg_type_orig_path, veg_type_field)
+                hru.veg_type_field))
+        veg_type_obj = Lookup(hru.veg_type_orig_path, hru.veg_type_field)
     else:
-        veg_type_obj = Raster(veg_type_orig_path)
+        veg_type_obj = Raster(hru.veg_type_orig_path)
 
     # Project veg type
     # DEADBEEF - Arc10.2 ProjectRaster does not honor extent
     project_raster_func(
         veg_type_obj, veg_type_path, hru.sr,
-        'NEAREST', veg_type_cs, transform_str,
-        '{0} {1}'.format(hru.ref_x, hru.ref_y), veg_type_orig_sr, hru)
+        'NEAREST', hru.veg_type_cs, transform_str,
+        veg_type_orig_sr, hru)
+    
     # env.extent = hru.extent
     # arcpy.ProjectRaster_management(
     #    veg_type_obj, veg_type_path, hru.sr,
@@ -355,7 +354,7 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Calculate zonal statistics
     logging.info('\nCalculating vegetation zonal statistics')
-    zonal_stats_func(zs_veg_dict, hru.polygon_path, hru.point_path, hru)
+    zonal_stats_func(zs_veg_dict, hru.polygon_path, hru)
 
 
     # Short-wave radiation transmission coefficient
