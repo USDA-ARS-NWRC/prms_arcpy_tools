@@ -28,7 +28,7 @@ import support_functions
 
 def prism_4km_parameters(config_path, data_name='ALL',
                          overwrite_flag=False, debug_flag=False, ):
-    """Calculate GSFLOW PRISM Parameters
+    """Calculate PRMS PRISM Parameters
 
     Args:
         config_file (str): Project config file path
@@ -43,16 +43,6 @@ def prism_4km_parameters(config_path, data_name='ALL',
     # Initialize hru_parameters class
     hru = support_functions.HRUParameters(config_path)
 
-    # Open input parameter config file
-    inputs_cfg = ConfigParser.ConfigParser()
-    try:
-        inputs_cfg.readfp(open(config_path))
-    except:
-        logging.error('\nERROR: Config file could not be read, ' +
-                      'is not an input file, or does not exist\n' +
-                      'ERROR: config_file = {0}\n').format(config_path)
-        sys.exit()
-
     # Log DEBUG to file
     log_file_name = 'prism_4km_normals_log.txt'
     log_console = logging.FileHandler(
@@ -62,36 +52,11 @@ def prism_4km_parameters(config_path, data_name='ALL',
     logging.getLogger('').addHandler(log_console)
     logging.info('\nGSFLOW PRISM Parameters')
 
-    # PRISM
-    prism_ws = inputs_cfg.get('INPUTS', 'prism_folder')
-    prism_proj_method = inputs_cfg.get('INPUTS', 'prism_projection_method')
-    prism_cs = inputs_cfg.getint('INPUTS', 'prism_cellsize')
-    calc_prism_jh_coef_flag = inputs_cfg.getboolean(
-        'INPUTS', 'calc_prism_jh_coef_flag')
-
     # Check input paths
-    if not arcpy.Exists(hru.polygon_path):
-        logging.error(
-            '\nERROR: Fishnet ({0}) does not exist'.format(
-                hru.polygon_path))
-        sys.exit()
-    # Check that PRISM folder is valid
-    if not os.path.isdir(prism_ws):
-        logging.error(
-            '\nERROR: PRISM folder ({0}) does not exist'.format(prism_ws))
-        sys.exit()
-    proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
-    if prism_proj_method.upper() not in proj_method_list:
-        logging.error('\nERROR: PRISM projection method must be: {0}'.format(
-            ', '.join(proj_method_list)))
-        sys.exit()
-    logging.debug('  Projection method:    {0}'.format(
-        prism_proj_method.upper()))
+    hru.check_polygon_path()
 
-    # Check other inputs
-    if prism_cs <= 0:
-        logging.error('\nERROR: PRISM cellsize must be greater than 0\n')
-        sys.exit()
+    # read PRIM from input file
+    hru.read_prism_parameters()
 
     # Set ArcGIS environment variables
     arcpy.CheckOutExtension('Spatial')
@@ -128,13 +93,14 @@ def prism_4km_parameters(config_path, data_name='ALL',
         # Search all files & subfolders in prism folder
         #   for images that match data type
         input_raster_dict = dict()
-        for root, dirs, files in os.walk(prism_ws):
+        for root, dirs, files in os.walk(hru.prism_ws):
             for file_name in files:
                 prism_normal_match = prism_normal_re.match(file_name)
                 if prism_normal_match:
                     month_str = prism_normal_match.group('month')
                     input_raster_dict[month_str] = os.path.join(
-                        prism_ws, root, file_name)
+                        hru.prism_ws, root, file_name)
+                    
         if not input_raster_dict:
             logging.error(
                 ('\nERROR: No PRISM rasters were found matching the ' +
@@ -190,8 +156,8 @@ def prism_4km_parameters(config_path, data_name='ALL',
             # DEADBEEF - Arc10.2 ProjectRaster does not extent
             support_functions.project_raster_func(
                 input_raster, output_raster, hru.sr,
-                prism_proj_method.upper(), prism_cs, transform_str,
-                '{0} {1}'.format(hru.ref_x, hru.ref_y), input_sr, hru)
+                hru.prism_proj_method.upper(), hru.prism_cs, transform_str,
+                input_sr, hru)
             # arcpy.ProjectRaster_management(
             #    input_raster, output_raster, hru.sr,
             #    prism_proj_method.upper(), prism_cs, transform_str,
@@ -212,14 +178,14 @@ def prism_4km_parameters(config_path, data_name='ALL',
         # Calculate zonal statistics
         logging.info('\nCalculating PRISM zonal statistics')
         support_functions.zonal_stats_func(
-            zs_prism_dict, hru.polygon_path, hru.point_path, hru)
+            zs_prism_dict, hru.polygon_path, hru)
         del zs_prism_dict
 
     # Jensen-Haise Potential ET air temperature coefficient
     # Update Jensen-Haise PET estimate using PRISM air temperature
     # DEADBEEF - First need to figure out month with highest Tmax
     #            Then get Tmin for same month
-    if calc_prism_jh_coef_flag:
+    if hru.calc_prism_jh_coef_flag:
         logging.info('\nRe-Calculating JH_COEF_HRU')
         logging.info('  Using PRISM temperature values')
         tmax_field_list = ['!TMAX_{0:02d}!'.format(m) for m in range(1, 13)]
@@ -227,13 +193,14 @@ def prism_4km_parameters(config_path, data_name='ALL',
         tmax_expr = 'max([{0}])'.format(','.join(tmax_field_list))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.jh_tmax_field, tmax_expr, 'PYTHON')
+        
         # Sort TMAX and get TMIN for same month
         tmin_expr = 'max(zip([{0}],[{1}]))[1]'.format(
             ','.join(tmax_field_list), ','.join(tmin_field_list))
         arcpy.CalculateField_management(
             hru.polygon_path, hru.jh_tmin_field, tmin_expr, 'PYTHON')
         
-    loggin.info('Done!')
+    logging.info('Done!')
 
 
 def arg_parse():

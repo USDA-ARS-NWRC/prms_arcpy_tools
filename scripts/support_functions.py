@@ -582,6 +582,37 @@ class HRUParameters():
                 ', '.join(imperv_proj_method_list)))
             sys.exit()
 
+    def read_prism_parameters(self):
+        """
+        Read the PRISM parameters from the config file
+        """
+        
+        # PRISM
+        self.prism_ws = self.inputs_cfg.get('INPUTS', 'prism_folder')
+        self.prism_proj_method = self.inputs_cfg.get('INPUTS', 'prism_projection_method')
+        self.prism_cs = self.inputs_cfg.getint('INPUTS', 'prism_cellsize')
+        self.calc_prism_jh_coef_flag = self.inputs_cfg.getboolean(
+            'INPUTS', 'calc_prism_jh_coef_flag')
+            
+        # Check that PRISM folder is valid
+        if not os.path.isdir(self.prism_ws):
+            logging.error(
+                '\nERROR: PRISM folder ({0}) does not exist'.format(self.prism_ws))
+            sys.exit()
+            
+        proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
+        if self.prism_proj_method.upper() not in proj_method_list:
+            logging.error('\nERROR: PRISM projection method must be: {0}'.format(
+                ', '.join(proj_method_list)))
+            sys.exit()
+        logging.debug('  Projection method:    {0}'.format(
+            self.prism_proj_method.upper()))
+    
+        # Check other inputs
+        if self.prism_cs <= 0:
+            logging.error('\nERROR: PRISM cellsize must be greater than 0\n')
+            sys.exit()
+
 
 def next_row_col(flow_dir, cell):
     """"""
@@ -1233,17 +1264,17 @@ def project_hru_extent_func(hru_extent, hru_sr,
         extent_string(projected_extent)))
     
     # Adjust extent to match snap
-    projected_extent = adjust_extent_to_snap(
-        projected_extent, target_extent.lowerLeft, target_cs, 'EXPAND', False)
-    logging.debug('  Snapped Extent:   {0}'.format(
-        extent_string(projected_extent)))
+#     projected_extent = adjust_extent_to_snap(
+#         projected_extent, target_extent.lowerLeft, target_cs, 'EXPAND', False)
+#     logging.debug('  Snapped Extent:   {0}'.format(
+#         extent_string(projected_extent)))
     
     # Buffer extent 4 input cells
     # projected_extent = buffer_extent_func(projected_extent, 4 * target_cs)
-    projected_extent = buffer_extent_func(
-        projected_extent, 4 * max(target_cs, hru_cs))
-    logging.debug('  Buffered Extent:  {0}'.format(
-        extent_string(projected_extent)))
+#     projected_extent = buffer_extent_func(
+#         projected_extent, 4 * max(target_cs, hru_cs))
+#     logging.debug('  Buffered Extent:  {0}'.format(
+#         extent_string(projected_extent)))
     return projected_extent
 
 
@@ -1266,6 +1297,7 @@ def project_raster_func(input_raster, output_raster, output_sr,
         input_extent, input_cs, input_sr)
     # clip_path = output_raster.replace('.img', '_clip.img')
     clip_path = os.path.join('in_memory', 'clip_raster')
+#     clip_path = os.path.join(hru_param.param_ws, 'clip_raster')
     env.extent = proj_extent
     arcpy.Clip_management(
         input_raster, ' '.join(str(proj_extent).split()[:4]), clip_path)
