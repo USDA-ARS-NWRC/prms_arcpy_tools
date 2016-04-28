@@ -554,6 +554,33 @@ class HRUParameters():
                 ', '.join(soil_proj_method_list)))
             sys.exit()
         
+        
+    def read_impervious_parameters(self):
+        """
+        Read the impervious parameters from the config file
+        """
+        
+        #
+        self.imperv_orig_path = self.inputs_cfg.get('INPUTS', 'impervious_orig_path')
+        # imperv_proj_method = inputs_cfg.get('INPUTS', 'impervious_projection_method')
+        self.imperv_proj_method = 'NEAREST'
+        self.imperv_cs = self.inputs_cfg.getint('INPUTS', 'impervious_cellsize')
+        self.imperv_pct_flag = self.inputs_cfg.getboolean('INPUTS', 'impervious_pct_flag')
+        
+        # Impervious raster must exist
+        if not arcpy.Exists(self.imperv_orig_path):
+            logging.error('\nERROR: Impervious raster does not exist')
+            sys.exit()
+    
+        # Check other inputs
+        if self.imperv_cs <= 0:
+            logging.error('\nERROR: soil cellsize must be greater than 0')
+            sys.exit()
+        imperv_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
+        if self.imperv_proj_method.upper() not in imperv_proj_method_list:
+            logging.error('\nERROR: Impervious projection method must be: {0}'.format(
+                ', '.join(imperv_proj_method_list)))
+            sys.exit()
 
 
 def next_row_col(flow_dir, cell):

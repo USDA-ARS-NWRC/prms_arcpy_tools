@@ -25,7 +25,7 @@ from support_functions import *
 
 
 def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
-    """Calculate GSFLOW Impervious Parameters
+    """Calculate PRMS Impervious Parameters
 
     Args:
         config_file (str): Project config file path
@@ -39,16 +39,6 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Initialize hru_parameters class
     hru = HRUParameters(config_path)
 
-    # Open input parameter config file
-    inputs_cfg = ConfigParser.ConfigParser()
-    try:
-        inputs_cfg.readfp(open(config_path))
-    except:
-        logging.error('\nERROR: Config file could not be read, ' +
-                      'is not an input file, or does not exist\n' +
-                      'ERROR: config_file = {0}\n').format(config_path)
-        sys.exit()
-
     # Log DEBUG to file
     log_file_name = 'impervious_parameters_log.txt'
     log_console = logging.FileHandler(
@@ -56,35 +46,14 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nGSFLOW Impervious Parameters')
-
-    #
-    imperv_orig_path = inputs_cfg.get('INPUTS', 'impervious_orig_path')
-    # imperv_proj_method = inputs_cfg.get('INPUTS', 'impervious_projection_method')
-    imperv_proj_method = 'NEAREST'
-    imperv_cs = inputs_cfg.getint('INPUTS', 'impervious_cellsize')
-    imperv_pct_flag = inputs_cfg.getboolean('INPUTS', 'impervious_pct_flag')
+    logging.info('\nPRMS Impervious Parameters')
 
     # Check input paths
-    if not arcpy.Exists(hru.polygon_path):
-        logging.error(
-            '\nERROR: Fishnet ({0}) does not exist'.format(
-                hru.polygon_path))
-        sys.exit()
-    # Impervious raster must exist
-    if not arcpy.Exists(imperv_orig_path):
-        logging.error('\nERROR: Impervious raster does not exist')
-        sys.exit()
+    hru.check_polygon_path()
 
-    # Check other inputs
-    if imperv_cs <= 0:
-        logging.error('\nERROR: soil cellsize must be greater than 0')
-        sys.exit()
-    imperv_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
-    if imperv_proj_method.upper() not in imperv_proj_method_list:
-        logging.error('\nERROR: Impervious projection method must be: {0}'.format(
-            ', '.join(imperv_proj_method_list)))
-        sys.exit()
+    # Check impervious parameters from config file
+    hru.read_impervious_parameters()     
+   
 
     # Build output folder if necessary
     imperv_temp_ws = os.path.join(hru.param_ws, 'impervious_rasters')
@@ -110,7 +79,7 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Available Water Capacity (AWC)
     logging.info('\nProjecting/clipping impervious cover raster')
-    imperv_orig_sr = Raster(imperv_orig_path).spatialReference
+    imperv_orig_sr = Raster(hru.imperv_orig_path).spatialReference
     logging.debug('  Impervious GCS:  {0}'.format(
         imperv_orig_sr.GCS.name))
     # Remove existing projected raster
@@ -124,9 +93,9 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # DEADBEEF - Arc10.2 ProjectRaster does not extent
     # env.extent = hru.extent
     project_raster_func(
-        imperv_orig_path, imperv_path, hru.sr,
-        imperv_proj_method, imperv_cs, transform_str,
-        '{0} {1}'.format(hru.ref_x, hru.ref_y), imperv_orig_sr, hru)
+        hru.imperv_orig_path, imperv_path, hru.sr,
+        hru.imperv_proj_method, hru.imperv_cs, transform_str,
+        imperv_orig_sr, hru)
     # arcpy.ProjectRaster_management(
     #    imperv_orig_path, imperv_path, hru.sr,
     #    imperv_proj_method, imperv_cs, transform_str,
@@ -142,11 +111,11 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Calculate zonal statistics
     logging.info('\nCalculating zonal statistics')
-    zonal_stats_func(zs_imperv_dict, hru.polygon_path, hru.point_path, hru)
+    zonal_stats_func(zs_imperv_dict, hru.polygon_path, hru)
 
     # Calculate CAREA_MIN / CAREA_MAX
     logging.info('\nCalculating CAREA_MIN / CAREA_MAX')
-    if imperv_pct_flag:
+    if hru.imperv_pct_flag:
         arcpy.CalculateField_management(
             hru.polygon_path, hru.imperv_pct_field,
             '0.01 * !{0}!'.format(hru.imperv_pct_field), 'PYTHON')
