@@ -468,6 +468,91 @@ class HRUParameters():
         if self.veg_cover_cs <= 0:
             logging.error('\nERROR: Veg. cover cellsize must be greater than 0')
             sys.exit()
+            
+    def read_soil_parameters(self):
+        """
+        Read the soil parameters from the config file
+        """
+        
+        self.soil_orig_ws  = self.inputs_cfg.get('INPUTS', 'soil_orig_folder')
+        self.awc_name      = self.inputs_cfg.get('INPUTS', 'awc_name')
+        self.clay_pct_name = self.inputs_cfg.get('INPUTS', 'clay_pct_name')
+        self.sand_pct_name = self.inputs_cfg.get('INPUTS', 'sand_pct_name')
+        # silt_pct_name = self.inputs_cfg.get('INPUTS', 'silt_pct_name')
+        self.soil_proj_method = 'NEAREST'
+        self.soil_cs = self.inputs_cfg.getint('INPUTS', 'soil_cellsize')
+        self.fill_soil_nodata_flag = self.inputs_cfg.getboolean(
+            'INPUTS', 'fill_soil_nodata_flag')
+        
+        self.soil_pct_flag = self.inputs_cfg.getboolean('INPUTS', 'soil_pct_flag')
+        self.moist_init_ratio = self.inputs_cfg.getfloat('INPUTS', 'moist_init_ratio')
+        self.rechr_init_ratio = self.inputs_cfg.getfloat('INPUTS', 'rechr_init_ratio')
+    
+        # Use Ksat to calculate ssr2gw_rate and slowcoef_lin
+        # calc_ssr2gw_rate_flag = hru.inputs_cfg.getboolean(
+        #    'INPUTS', 'calc_ssr2gw_rate_flag')
+        # calc_slowcoef_flag = hru.inputs_cfg.getboolean(
+        #    'INPUTS', 'calc_slowcoef_flag')
+        # if calc_ssr2gw_rate_flag or calc_slowcoef_flag:
+        self.ksat_name = self.inputs_cfg.get('INPUTS', 'ksat_name')
+    
+        # Clip root depth to soil depth
+        self.clip_root_depth_flag = self.inputs_cfg.getboolean(
+            'INPUTS', 'clip_root_depth_flag')
+        if self.clip_root_depth_flag:
+            self.soil_depth_name = self.inputs_cfg.get('INPUTS', 'soil_depth_name')
+        
+        # All of the soil rasters must exist
+        self.awc_orig_path = os.path.join(self.soil_orig_ws, self.awc_name)
+        self.clay_pct_orig_path = os.path.join(self.soil_orig_ws, self.clay_pct_name)
+        self.sand_pct_orig_path = os.path.join(self.soil_orig_ws, self.sand_pct_name)
+        # silt_orig_path = os.path.join(soil_orig_ws, silt_pct_name)
+        
+        # if calc_ssr2gw_rate_flag or calc_slowcoef_flag:
+        self.ksat_orig_path = os.path.join(self.soil_orig_ws, self.ksat_name)
+        if self.clip_root_depth_flag:
+            self.soil_depth_path = os.path.join(self.soil_orig_ws, self.soil_depth_name)
+    
+        # Check soil init ratios
+        if self.moist_init_ratio < 0 or self.moist_init_ratio > 1:
+            logging.error('\nERROR: Soil moist_init_ratio must be between 0 & 1')
+            sys.exit()
+        if self.rechr_init_ratio < 0 or self.rechr_init_ratio > 1:
+            logging.error('\nERROR: Soil rechr_init_ratio must be between 0 & 1')
+            sys.exit()
+    
+    
+        # Check that either the original or projected/clipped raster exists
+        if not arcpy.Exists(self.awc_orig_path):
+            logging.error('\nERROR: AWC raster does not exist')
+            sys.exit()
+        if not arcpy.Exists(self.clay_pct_orig_path):
+            logging.error('\nERROR: Clay raster does not exist')
+            sys.exit()
+        if not arcpy.Exists(self.sand_pct_orig_path):
+            logging.error('\nERROR: Sand raster does not exist')
+            sys.exit()
+        # if not arcpy.Exists(silt_orig_path):
+        #    logging.error('\nERROR: Silt raster does not exist')
+        #    sys.exit()
+        # if ((calc_ssr2gw_rate_flag or calc_slowcoef_flag) and
+        #    not arcpy.Exists(ksat_orig_path)):
+        if not arcpy.Exists(self.ksat_orig_path):
+            logging.error('\nERROR: Ksat raster does not exist')
+            sys.exit()
+        if self.clip_root_depth_flag and not arcpy.Exists(self.soil_depth_orig_path):
+            logging.error('\nERROR: Soil depth raster does not exist')
+            sys.exit()
+    
+        # Check other inputs
+        if self.soil_cs <= 0:
+            logging.error('\nERROR: soil cellsize must be greater than 0')
+            sys.exit()
+        soil_proj_method_list = ['BILINEAR', 'CUBIC', 'NEAREST']
+        if self.soil_proj_method.upper() not in soil_proj_method_list:
+            logging.error('\nERROR: Soil projection method must be: {0}'.format(
+                ', '.join(soil_proj_method_list)))
+            sys.exit()
         
 
 

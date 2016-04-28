@@ -40,16 +40,6 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Initialize hru_parameters class
     hru = HRUParameters(config_path)
 
-    # Open input parameter config file
-    inputs_cfg = ConfigParser.ConfigParser()
-    try:
-        inputs_cfg.readfp(open(config_path))
-    except:
-        logging.error('\nERROR: Config file could not be read, ' +
-                      'is not an input file, or does not exist\n' +
-                      'ERROR: config_file = {0}\n').format(config_path)
-        sys.exit()
-
     # Log DEBUG to file
     log_file_name = 'soil_parameters_log.txt'
     log_console = logging.FileHandler(
@@ -59,20 +49,12 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     logging.getLogger('').addHandler(log_console)
     logging.info('\nGSFLOW Soil Parameters')
 
-    # Input parameters
-    soil_pct_flag = inputs_cfg.getboolean('INPUTS', 'soil_pct_flag')
-    moist_init_ratio = inputs_cfg.getfloat('INPUTS', 'moist_init_ratio')
-    rechr_init_ratio = inputs_cfg.getfloat('INPUTS', 'rechr_init_ratio')
-
-    # Use Ksat to calculate ssr2gw_rate and slowcoef_lin
-    # calc_ssr2gw_rate_flag = inputs_cfg.getboolean(
-    #    'INPUTS', 'calc_ssr2gw_rate_flag')
-    # calc_slowcoef_flag = inputs_cfg.getboolean(
-    #    'INPUTS', 'calc_slowcoef_flag')
-
-    # Clip root depth to soil depth
-    clip_root_depth_flag = inputs_cfg.getboolean(
-        'INPUTS', 'clip_root_depth_flag')
+    # Check and load input parameters from config file
+    hru.read_soil_parameters()
+    hru.dem_cs = hru.soil_cs  # assume for zonal stats
+    
+    # check the polygon
+    hru.check_polygon_path()
 
     # Input folders
     soil_temp_ws = os.path.join(hru.param_ws, 'soil_rasters')
@@ -112,17 +94,10 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     if not arcpy.Exists(ksat_path):
         logging.error('\nERROR: Ksat raster does not exist')
         sys.exit()
-    if clip_root_depth_flag and not arcpy.Exists(soil_depth_path):
+    if hru.clip_root_depth_flag and not arcpy.Exists(soil_depth_path):
         logging.error('\nERROR: Soil depth raster does not exist')
         sys.exit()
-    # Check soil init ratios
-    if moist_init_ratio < 0 or moist_init_ratio > 1:
-        logging.error('\nERROR: Soil moist_init_ratio must be between 0 & 1')
-        sys.exit()
-    if rechr_init_ratio < 0 or rechr_init_ratio > 1:
-        logging.error('\nERROR: Soil rechr_init_ratio must be between 0 & 1')
-        sys.exit()
-
+    
     # DEM Slope is needed for SSR2GW_RATE
     dem_temp_ws = os.path.join(hru.param_ws, 'dem_rasters')
     dem_slope_path = os.path.join(dem_temp_ws, 'dem_slope.img')
@@ -170,7 +145,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # add_field_func(hru.polygon_path, hru.silt_pct_field, 'DOUBLE')
     # if calc_ssr2gw_rate_flag or calc_slowcoef_flag:
     add_field_func(hru.polygon_path, hru.ksat_field, 'DOUBLE')
-    if clip_root_depth_flag:
+    if hru.clip_root_depth_flag:
         add_field_func(hru.polygon_path, hru.soil_depth_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.root_depth_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.soil_type_field, 'DOUBLE')
@@ -187,7 +162,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
 
     # Clip root depth to soil depth
-    if clip_root_depth_flag:
+    if hru.clip_root_depth_flag:
         # This will clip root depth to soil depth
         # Minimum of root depth and soil depth
         logging.info('Clipping root depth to soil depth')
@@ -245,7 +220,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # zs_soil_dict[hru.silt_pct_field] = [silt_pct_path, 'MEAN']
     # if calc_ssr2gw_rate_flag or calc_slowcoef_flag:
     zs_soil_dict[hru.ksat_field] = [ksat_path, 'MEAN']
-    if clip_root_depth_flag:
+    if hru.clip_root_depth_flag:
         zs_soil_dict[hru.soil_depth_field] = [soil_depth_path, 'MEAN']
         zs_soil_dict[hru.root_depth_field] = [root_depth_path, 'MEAN']
     zs_soil_dict[hru.moist_max_field] = [moist_max_path, 'MEAN']
@@ -255,7 +230,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Calculate zonal statistics
     logging.info('\nCalculating zonal statistics')
-    zonal_stats_func(zs_soil_dict, hru.polygon_path, hru.point_path, hru)
+    zonal_stats_func(zs_soil_dict, hru.polygon_path, hru)
 
 
     # Make a fishnet layer for calculating fields
@@ -268,7 +243,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     arcpy.SelectLayerByAttribute_management(
         hru_polygon_layer, "NEW_SELECTION",
         '"{0}" = 1'.format(hru.type_in_field))
-    if soil_pct_flag:
+    if hru.soil_pct_flag:
         soil_type_pct = (50, 40)
     else:
         soil_type_pct = (0.50, 0.40)
@@ -294,10 +269,10 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
         '"{0}" = 1 AND "{1}" >= 0'.format(
             hru.type_in_field, hru.moist_max_field))
     logging.info('\nCalculating {0} as {2} * {1}'.format(
-        hru.moist_init_field, hru.moist_max_field, moist_init_ratio))
+        hru.moist_init_field, hru.moist_max_field, hru.moist_init_ratio))
     arcpy.CalculateField_management(
         hru.polygon_path, hru.moist_init_field,
-        '!{0}! * {1}'.format(hru.moist_max_field, moist_init_ratio), 'PYTHON')
+        '!{0}! * {1}'.format(hru.moist_max_field, hru.moist_init_ratio), 'PYTHON')
     arcpy.SelectLayerByAttribute_management(
         hru_polygon_layer, "SWITCH_SELECTION")
     arcpy.CalculateField_management(
@@ -312,10 +287,10 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
         '"{0}" = 1 AND "{1}" >= 0'.format(
             hru.type_in_field, hru.rechr_max_field))
     logging.info('Calculating {0} as {2} * {1}'.format(
-        hru.rechr_init_field, hru.rechr_max_field, moist_init_ratio))
+        hru.rechr_init_field, hru.rechr_max_field, hru.moist_init_ratio))
     arcpy.CalculateField_management(
         hru.polygon_path, hru.rechr_init_field,
-        '!{0}! * {1}'.format(hru.rechr_max_field, moist_init_ratio), 'PYTHON')
+        '!{0}! * {1}'.format(hru.rechr_max_field, hru.moist_init_ratio), 'PYTHON')
     arcpy.SelectLayerByAttribute_management(
         hru_polygon_layer, "SWITCH_SELECTION",
         '"{0}" != 1'.format(hru.type_in_field))
@@ -362,14 +337,17 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #    'def slowcoef_lin(ksat, slope, porosity, fd, cs):\n' +
     #    '    return (ksat * (3600 * 24 / 1000000) * math.sin(slope) / ' +
     #    '(porosity * fd_len(fd, cs)))\n')
+#     slowcoef_lin_cb = (
+#         'def slowcoef_lin(ksat, slope, porosity, fd, cs):\n' +
+#         '    return (ksat * 0.0864 * math.sin(slope) / (porosity * cs))\n')
     slowcoef_lin_cb = (
         'def slowcoef_lin(ksat, slope, porosity, fd, cs):\n' +
-        '    return (ksat * 0.0864 * math.sin(slope) / (porosity * cs))\n')
+        '    return 0.015\n')
     arcpy.CalculateField_management(
         hru_polygon_layer, hru.slowcoef_lin_field,
         'slowcoef_lin(!{0}!, !{1}!, {2}, !{3}!, {4})'.format(
             hru.ksat_field, hru.slope_rad_field, porosity_flt,
-            hru.flow_dir_field, hru.cs),
+            hru.flow_dir_field, 300),
         'PYTHON', slowcoef_lin_cb)
     arcpy.SelectLayerByAttribute_management(
         hru_polygon_layer, "SWITCH_SELECTION")

@@ -55,7 +55,7 @@ def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nGSFLOW Vegetation Parameters')
+    logging.info('\nPRMS Vegetation Parameters')
 
     # Landfire Vegetation Type
     hru.read_veg_parameters()

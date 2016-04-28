@@ -12,7 +12,7 @@ Series of Python/ArcPy (ArcGIS) scripts for developing inputs for a PRMS model. 
 - hru_parameters.py 
 - dem_parameters.py 
 - veg_parameters.py 
-- soil_raster_pre.py 
+- soil_raster_prep.py 
 - soil_parameters.py 
 - impervious_parameters.py 
 - prism_4km_normals.py / prism_800m_normals.py 
