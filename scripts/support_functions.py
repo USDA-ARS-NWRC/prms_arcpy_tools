@@ -276,6 +276,7 @@ class HRUParameters():
         self.obsin_segment    = fields_cfg.get('FIELDS', 'obsin_segment')
         self.tosegment        = fields_cfg.get('FIELDS', 'tosegment')
         self.x_coef           = fields_cfg.get('FIELDS', 'x_coef')
+        self.stream_path = inputs_cfg.get('INPUTS', 'hru_path')
 
 
         # if set_ppt_zones_flag:
@@ -612,6 +613,19 @@ class HRUParameters():
         if self.prism_cs <= 0:
             logging.error('\nERROR: PRISM cellsize must be greater than 0\n')
             sys.exit()
+            
+    def read_stream_parameters(self):
+        """
+        Read the stream parameters from the config file
+        """
+        
+        self.streams_path = self.inputs_cfg.get('INPUTS', 'streams_path')
+        if not os.path.isfile(self.streams_path):
+            logging.error(
+                ('\nERROR: Stream shapefiles does not exist' +
+                 '\nERROR:   {0}').format(
+                     self.streams_path))
+            sys.exit()
 
 
 def next_row_col(flow_dir, cell):
@@ -647,12 +661,11 @@ def add_field_func(hru_param_path, field_name, field_type='DOUBLE'):
     """"""
     while not arcpy.ListFields(hru_param_path, field_name):
         logging.info('  Field: {0}'.format(field_name))
-        try:
-            arcpy.AddField_management(
-                hru_param_path, field_name, field_type)
-        except:
-            pass
-        sleep(0.5)
+#         try:
+        arcpy.AddField_management(hru_param_path, field_name, field_type)
+#         except:
+#             pass
+#         sleep(0.5)
 
 
 def transform_func(spat_ref_a, spat_ref_b):

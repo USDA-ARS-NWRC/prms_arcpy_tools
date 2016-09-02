@@ -60,7 +60,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     logging.info('\nFilling PRMS Parameter File Template')
 
     # Read parameters from config file
-    hru.polygon_path = config.get('INPUTS', 'hru_fishnet_path')
+    #hru.polygon_path = config.get('INPUTS', 'hru_fishnet_path')
     hru.fid_field = config.get('INPUTS', 'orig_fid_field')
     prms_parameter_path = config.get('INPUTS', 'prms_parameter_path')
     # prms_template_path  = config.get('INPUTS', 'prms_template_path')
