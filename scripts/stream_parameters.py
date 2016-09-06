@@ -113,7 +113,6 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #Delete the structures created for generating the stream tosegment parameter
     del stream_segments, compare_stream_segments, stream, compare
           
-
     # Get stream length for each cell
 #     logging.info("Stream length")
 #     arcpy.MakeFeatureLayer_management(hru.polygon_path, hru_polygon_lyr)

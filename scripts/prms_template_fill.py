@@ -328,12 +328,12 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     param_dimen_names_dict['ncol'] = ['one']
     param_values_count_dict['ncol'] = dimen_size_dict['one']
     param_type_dict['ncol'] = 1
-    value_fields = (hru.id_field, hru.col_field)
-    with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
-        param_values_dict['ncol'][0] = len(
-            list(set([int(row[1]) for row in s_cursor])))
-    logging.info('  ncol = {0}'.format(
-        param_values_dict['ncol'][0]))
+#     value_fields = (hru.id_field, hru.col_field)
+#     with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
+#         param_values_dict['ncol'][0] = len(
+#             list(set([int(row[1]) for row in s_cursor])))
+#     logging.info('  ncol = {0}'.format(
+#         param_values_dict['ncol'][0]))
 
     # Calculate mean monthly maximum temperature for all active cells
     logging.info('\nCalculating tmax_index')
@@ -381,7 +381,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         param_values_dict['snow_adj'][i] = value
     del ratio_values
 
-    #
     logging.info('\nCalculating subbasin_down')
     param_name_dict['subbasin_down'] = 'subbasin_down'
     param_width_dict['subbasin_down'] = 0
@@ -395,8 +394,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     cell_dict = dict()
     fields = [
         hru.type_field, hru.krch_field, hru.lake_id_field,
-        hru.subbasin_field, hru.flow_dir_field,
-        hru.col_field, hru.row_field, hru.id_field]
+        hru.subbasin_field, hru.flow_dir_field]
+#         ,hru.col_field, hru.row_field, hru.id_field]
     for row in arcpy.da.SearchCursor(hru.polygon_path, fields):
         # Skip inactive cells
         if int(row[0]) == 0:
