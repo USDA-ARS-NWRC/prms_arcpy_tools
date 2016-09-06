@@ -96,6 +96,9 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     if os.path.isfile(prms_parameter_path):
         os.remove(prms_parameter_path)
 
+    #Get the total number of HRUs from shapefile
+    hru_count = int(arcpy.GetCount_management(hru.polygon_path).getOutput(0))
+    
     # Read in dimensions from CSV
     logging.info('\nReading dimensions CSV')
     dimen_size_dict = dict()
@@ -116,8 +119,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         del dimen_size
 
     # These parameters equal the total number of HRUs  in the HRU shapefile 
-    hru_count = arcpy.GetCount_management(hru.polygon_path)
-    print hru_count
     for dimen_name in ['ngw', 'ngwcell', 'nhru', 'nhrucell', 'nssr']:
         dimen_size_dict[dimen_name] = hru_count
         logging.info('  {0} = {1}'.format(
@@ -220,6 +221,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                     ('\nERROR: Default value {0} was not parsed' +
                      '\nERROR: {1}').format(param_default, line))
                 sys.exit()
+        
         # For multi-value lists, convert values to int/float
         elif len(param_default) >= 2:
             if param_type == 1:
@@ -239,12 +241,13 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                     ('\nERROR: The dimension {0} is not set in the ' +
                      'dimension CSV file').format(dimen_name))
                 sys.exit()
+      
         # Calculate number of dimensions
         dimen_count = str(len(dimen_names))
+        
         # Calculate number of values
-        values_count = prod(
-            [int(dimen_size_dict[dn]) for dn in dimen_names
-             if dimen_size_dict[dn]])
+        values_count = prod( [int(dimen_size_dict[dn]) for dn in dimen_names if dimen_size_dict[dn]])
+        
         # Write parameter to dictionaries
         param_name_dict[param_name] = param_name
         param_width_dict[param_name] = param_width
@@ -360,13 +363,13 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     param_width_dict['rain_adj'] = 4
     param_dimen_count_dict['rain_adj'] = 2
     param_dimen_names_dict['rain_adj'] = ['nhru', 'nmonths']
-    param_values_count_dict['rain_adj'] = 12 * fishnet_count
+    param_values_count_dict['rain_adj'] = 12 * hru_count
     param_type_dict['rain_adj'] = 2
     param_name_dict['snow_adj'] = 'snow_adj'
     param_width_dict['snow_adj'] = 4
     param_dimen_count_dict['snow_adj'] = 2
     param_dimen_names_dict['snow_adj'] = ['nhru', 'nmonths']
-    param_values_count_dict['snow_adj'] = 12 * fishnet_count
+    param_values_count_dict['snow_adj'] = 12 * hru_count
     param_type_dict['snow_adj'] = 2
     ratio_values = []
     for i, ratio_field in enumerate(ratio_field_list):

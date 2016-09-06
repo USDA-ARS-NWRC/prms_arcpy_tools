@@ -276,7 +276,7 @@ class HRUParameters():
         self.obsin_segment    = fields_cfg.get('FIELDS', 'obsin_segment')
         self.tosegment        = fields_cfg.get('FIELDS', 'tosegment')
         self.x_coef           = fields_cfg.get('FIELDS', 'x_coef')
-        self.stream_path = inputs_cfg.get('INPUTS', 'hru_path')
+        self.stream_path = inputs_cfg.get('INPUTS', 'streams_path')
 
 
         # if set_ppt_zones_flag:

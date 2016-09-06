@@ -78,33 +78,41 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Add fields if necessary to the HRU
     logging.info('\nAdding fields if necessary')
     add_field_func(hru.polygon_path, hru.hru_segment, 'LONG')
-    add_field_func(hru.polygon_path, hru.k_coef, 'DOUBLE')
-    add_field_func(hru.polygon_path, hru.obsin_segment, 'LONG')
-    add_field_func(hru.polygon_path, hru.tosegment, 'LONG')
-    add_field_func(hru.polygon_path, hru.x_coef, 'DOUBLE')
+    add_field_func(hru.streams_path, hru.k_coef, 'DOUBLE')
+    add_field_func(hru.streams_path, hru.obsin_segment, 'LONG')
+    add_field_func(hru.streams_path, hru.tosegment, 'LONG')
+    add_field_func(hru.streams_path, hru.x_coef, 'DOUBLE')
     
     # add some to the stream shapefile
     length_field = 'LENGTH'
     add_field_func(hru.stream_path, hru.tosegment, 'LONG')
     add_field_func(hru.stream_path, length_field, 'DOUBLE')
 
-    
     # Calculate the TOSEGMENT
-     
-#     # Calculate KRCH, IRCH, JRCH for stream segments
-#     logging.info("\nKRCH, IRCH, & JRCH for streams")
-#     fields = [
-#         hru.type_field, hru.iseg_field, hru.row_field, hru.col_field,
-#         hru.krch_field, hru.irch_field, hru.jrch_field]
-#     with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
-#         for row in update_c:
-#             if (int(row[0]) == 1 and int(row[1]) > 0):
-#             # DEADBEEF
-#             # if (int(row[0]) == 1 or int(row[0]) == 3) and int(row[1]) > 0:
-#                 row[4], row[5], row[6] = 1, int(row[2]), int(row[3])
-#             else:
-#                 row[4], row[5], row[6] = 0, 0, 0
-#             update_c.updateRow(row)
+    logging.info("\nCalculating tosegment parameter")
+    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID","to_node", "tosegment"])
+    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID","from_node"])
+
+    #Set all tosegment to zero
+    for stream in stream_segments:
+        stream[2] = 0   
+        stream_segments.updateRow(stream)
+    stream_segments.reset()
+    #Search for stream's whose from_nodes match another stream's to_node
+    for stream in stream_segments:
+        to_node = stream[1] #to_node value
+        #While compare_stream exists, Cursor.next() returns none when end of a list occurs
+        for compare in compare_stream_segments:
+            if to_node == compare[1]:  #compare to _node to from_node
+                stream[2] = compare[0] # tosegment = compare stream objectid
+                #print stream[1],compare[1], stream[2], compare[0]
+                break 
+        stream_segments.updateRow(stream)
+        compare_stream_segments.reset()
+    
+    #Delete the structures created for generating the stream tosegment parameter
+    del stream_segments, compare_stream_segments, stream, compare
+          
 
     # Get stream length for each cell
 #     logging.info("Stream length")
