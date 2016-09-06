@@ -97,7 +97,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         # lake_path must be a polygon shapefile
         if arcpy.Describe(lake_orig_path).datasetType != 'FeatureClass':
             logging.error(
-                '\nERROR: lake_path must be a polygon shapefile')
+arcpy.da.SearchCursor(hru.polygon_path, fields)                '\nERROR: lake_path must be a polygon shapefile')
             sys.exit()
         # Check lake_zone_field
         if lake_zone_field.upper() in ['', 'FID', 'NONE']:
@@ -156,8 +156,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             os.path.dirname(hru.point_path),
             os.path.basename(hru.point_path), 'POINT')
         arcpy.DefineProjection_management(hru.point_path, hru.sr)
-        arcpy.AddField_management(
-            hru.point_path, hru.fid_field, 'LONG')
+        arcpy.AddField_management(hru.point_path, hru.fid_field, 'LONG')
         hru_centroid_list = [
             row for row in  arcpy.da.SearchCursor(
                 hru.polygon_path, ['OID@', 'SHAPE@XY'])]

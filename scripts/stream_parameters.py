@@ -91,8 +91,6 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     
     # Calculate the TOSEGMENT
      
-
-
 #     # Calculate KRCH, IRCH, JRCH for stream segments
 #     logging.info("\nKRCH, IRCH, & JRCH for streams")
 #     fields = [
@@ -109,7 +107,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
 #             update_c.updateRow(row)
 
     # Get stream length for each cell
-    logging.info("Stream length")
+#     logging.info("Stream length")
 #     arcpy.MakeFeatureLayer_management(hru.polygon_path, hru_polygon_lyr)
 #     arcpy.SelectLayerByAttribute_management(
 #         hru_polygon_lyr, "NEW_SELECTION",
@@ -119,27 +117,25 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
 #         [hru_polygon_lyr, hru.streams_path],
 #         length_path, "ALL", "", "LINE")
 #     arcpy.Delete_management(hru_polygon_lyr)
+#      
 #     
-    
-    arcpy.CalculateField_management(
-        hru.stream_path, length_field, '!shape.length@meters!', "PYTHON")
-    length_dict = defaultdict(int)
-    
-    
-    
-    # DEADBEEF - This probably needs a maximum limit
-    for row in arcpy.da.SearchCursor(
-        length_path, [hru.id_field, length_field]):
-        length_dict[int(row[0])] += int(row[1])
-    fields = [hru.type_field, hru.iseg_field, hru.rchlen_field, hru.id_field]
-    with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
-        for row in update_c:
-            if (int(row[0]) == 1 and int(row[1]) != 0):
-                row[2] = length_dict[int(row[3])]
-            else:
-                row[2] = 0
-            update_c.updateRow(row)
-    del length_dict, length_field, fields, hru_polygon_lyr
+#     arcpy.CalculateField_management(
+#         hru.stream_path, length_field, '!shape.length@meters!', "PYTHON")
+#     length_dict = defaultdict(int)
+#      
+#         # DEADBEEF - This probably needs a maximum limit
+#     for row in arcpy.da.SearchCursor(
+#         length_path, [hru.id_field, length_field]):
+#         length_dict[int(row[0])] += int(row[1])
+#     fields = [hru.type_field, hru.iseg_field, hru.rchlen_field, hru.id_field]
+#     with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
+#         for row in update_c:
+#             if (int(row[0]) == 1 and int(row[1]) != 0):
+#                 row[2] = length_dict[int(row[3])]
+#             else:
+#                 row[2] = 0
+#             update_c.updateRow(row)
+#     del length_dict, length_field, fields, hru_polygon_lyr
 
     # Get list of segments and downstream cell for each stream/lake cell
     # Downstream is calulated from flow direction
@@ -149,7 +145,8 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     fields = [
         hru.type_field, hru.krch_field, hru.lake_id_field, hru.iseg_field,
         hru.irunbound_field, hru.subbasin_field, hru.dem_adj_field,
-        hru.flow_dir_field, hru.col_field, hru.row_field, hru.id_field]
+        hru.flow_dir_field, hru.id_field]
+#         hru.flow_dir_field, hru.col_field, hru.row_field, hru.id_field]
     for row in arcpy.da.SearchCursor(hru.polygon_path, fields):
         # Skip inactive cells
         if int(row[0]) == 0:
@@ -270,7 +267,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Saving ireach and outseg
     logging.info("Save IREACH and OUTSEG")
     fields = [
-        hru.type_field, hru.iseg_field, hru.col_field, hru.row_field,
+        hru.type_field, hru.iseg_field, hru.row_field,
         hru.outseg_field, hru.reach_field, hru.maxreach_field]
     with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
         for row in update_c:
