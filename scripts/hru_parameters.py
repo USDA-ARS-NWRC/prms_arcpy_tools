@@ -42,17 +42,17 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # Initialize hru parameters class
     hru = HRUParameters(config_path)
-
-#     # Open input parameter config file
-#     hru.inputs_cfg = ConfigParser.ConfigParser()
-#     try:
-#         hru.inputs_cfg.readfp(open(config_path))
-#     except:
-#         logging.error('\nERROR: Config file could not be read, ' +
-#                       'is not an input file, or does not exist\n' +
-#                       'ERROR: config_file = {0}\n').format(config_path)
-#         sys.exit()
-#     logging.debug('\nReading Input File')
+ 
+    # Open input parameter config file
+    hru.inputs_cfg = ConfigParser.ConfigParser()
+    try:
+        hru.inputs_cfg.readfp(open(config_path))
+    except:
+        logging.error('\nERROR: Config file could not be read, ' +
+                      'is not an input file, or does not exist\n' +
+                      'ERROR: config_file = {0}\n').format(config_path)
+        sys.exit()
+    logging.debug('\nReading Input File')
 
     # Log DEBUG to file
     log_file_name = 'hru_parameters_log.txt'
@@ -83,7 +83,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Calculate layer thickness and bottoms
 #     calc_layer_thickness_flag = hru.inputs_cfg.getboolean('INPUTS', 'calc_layer_thickness_flag')
 
-
     # Check input paths
     hru.check_polygon_path()
     
@@ -96,8 +95,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
             sys.exit()
         # lake_path must be a polygon shapefile
         if arcpy.Describe(lake_orig_path).datasetType != 'FeatureClass':
-            logging.error(
-arcpy.da.SearchCursor(hru.polygon_path, fields)                '\nERROR: lake_path must be a polygon shapefile')
+            logging.error( '\nERROR: lake_path {0} must be a polygon shapefile'.format(arcpy.da.SearchCursor(hru.polygon_path,fields)))
             sys.exit()
         # Check lake_zone_field
         if lake_zone_field.upper() in ['', 'FID', 'NONE']:

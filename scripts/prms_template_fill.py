@@ -84,15 +84,15 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             '\nERROR: HRU Shapefile ({0}) does not exist'.format(
                 hru.polygon_path))
         sys.exit()
-    # if not os.path.isfile(prms_template_path):
-    #    logging.error('\nERROR: The template parameter file does not exist\n')
-    #    sys.exit()
+         
     if not os.path.isfile(prms_dimen_csv_path):
         logging.error('\nERROR: The dimensions CSV file does not exist\n')
         sys.exit()
+    
     if not os.path.isfile(prms_param_csv_path):
         logging.error('\nERROR: The parameters CSV file does not exist\n')
         sys.exit()
+    
     if os.path.isfile(prms_parameter_path):
         os.remove(prms_parameter_path)
 
@@ -145,15 +145,15 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 #             [int(row[1]) for row in s_cursor if int(row[1]) > 0]))
 #     logging.info('  nreach = {0}'.format(dimen_size_dict['nreach']))
 #
-#     # Getting number of stream segments
-#     logging.info('Calculating number of unique stream segments')
-#     logging.info('  Stream segments are {0} >= 0'.format(
-#         hru.iseg_field))
-#     value_fields = (hru.id_field, hru.iseg_field)
-#     with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
-#         dimen_size_dict['nsegment'] = len(list(set(
-#             [int(row[1]) for row in s_cursor if int(row[1]) > 0])))
-#     logging.info('  nsegment = {0}'.format(dimen_size_dict['nsegment']))
+    # Getting number of stream segments
+    
+    logging.info('Calculating number of unique stream segments')
+    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID"])
+    nsegment = 0
+    for segment in stream_segments:
+        nsegment +=1
+    dimen_size_dict['nsegment']=nsegment
+    logging.info('  nsegment = {0}'.format(dimen_size_dict['nsegment']))
 
     # Getting number of subbasins
     logging.info('Calculating number of unique subbasins')
@@ -591,6 +591,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                     output_f.write('{0}'.format(param_value) + '\n')
     # Close file
     output_f.close()
+    logging.info('Done!')
 
 
 def prod(iterable):

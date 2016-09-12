@@ -37,8 +37,7 @@ class HRUParameters():
         try:
             inputs_cfg.readfp(open(config_path))
         except IOError:
-            logging.error(('\nERROR: Config file does not exist\n' +
-                           '  {0}\n').format(field_list_path))
+            logging.error(('\nERROR: Config file does not exist\n'))
             sys.exit()
         except ConfigParser.MissingSectionHeaderError:
             logging.error('\nERROR: Config file is missing a section header\n' +
