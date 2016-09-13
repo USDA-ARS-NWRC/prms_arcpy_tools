@@ -294,32 +294,23 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         if type(value) is str and value != "CALCULATED":
             param_field_dict[key] = value
      
-    value_fields = param_field_dict.values()
+    arc_value_fields = param_field_dict.values()
   
-    # Use OBJECTID to uniquely identify each cell
+    # Use an ID to uniquely identify each cell as to place its value correctly under the key
     identifier = hru.id_field
-    if  identifier not in value_fields:
-        value_fields.append(identifier)
+    if  identifier not in arc_value_fields:
+        arc_value_fields.append(identifier)
     
     # Read in each cell parameter value
-    s_cursor = arcpy.da.SearchCursor(hru.polygon_path, value_fields)
+    s_cursor = arcpy.da.SearchCursor(hru.polygon_path, arc_value_fields)
     for row in s_cursor:
         #Use the identifier to uniquely assign each value in cursor
-        param_row_id = row[value_fields.index(identifier)]
+        param_row_id = row[arc_value_fields.index(identifier)]
 
-        #Iterate through and add all values in the row
-        for param_name in param_field_dict.values():
-            param_values_dict[param_name][param_row_id] = row[value_fields.index(param_name)]
-#         for param in range(len(param_field_dict.items())):
-#             #if intended field type is meant to be an integer
-#             if param_type_dict[param] == 1:
-#                 value = int(row[field_i])
-#             #if intended field type is meant to be a float or double
-#             elif param_type_dict[param] in [2, 3]:
-#                 value = float(row[field_i])
-#             #if intended field type is meant to be a string
-#             elif param_type_dict[param] == 4:
-#                 value = row[]
+        #Iterate through and add all values in the row to our dict
+        for param_name,arc_param_name in param_field_dict.items():
+            param_values_dict[param_name][param_row_id] = row[arc_value_fields.index(arc_param_name)]
+            logging.debug('{0}, {1}, {2}'.format(row[arc_value_fields.index(identifier)],param_name,row[arc_value_fields.index(arc_param_name)]))
 
     # The following will override the parameter CSV values
     # Calculate basin_area from active cells (land and lake)
@@ -358,7 +349,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             tmax_field, param_values_dict['tmax_index'][i]))
         del tmax_values
 
-    #
     logging.info('\nCalculating rain_adj/snow_adj')
     ratio_field_list = ['PPT_RT_{0:02d}'.format(m) for m in range(1, 13)]
     param_name_dict['rain_adj'] = 'rain_adj'
@@ -571,7 +561,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                     output_f.write('{0:f}'.format(param_value) + '\n')
                 elif param_type == 4:
                     output_f.write('{0}'.format(param_value) + '\n')
-            print param_name,len(param_values_dict[param_name])
 
     # Close file
     output_f.close()

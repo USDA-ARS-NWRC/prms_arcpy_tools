@@ -1,9 +1,9 @@
 #--------------------------------
 # Name:        run_all.py
-# Purpose:      GSFLOW vegetation parameters
+# Purpose:     PRMS Execute All 
 # Notes:        ArcGIS 10.2 Version
-# Author:       Charles Morton
-# Created       2016-02-26
+# Author:       Micah Johnson
+# Created       2016-09-13
 # Python:       2.7
 #--------------------------------
 
