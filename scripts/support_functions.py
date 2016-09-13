@@ -119,14 +119,6 @@ class HRUParameters():
                 os.mkdir(scratch_ws)
             self.scratch_ws = scratch_ws
 
-        # Log input hru parameters
-#         logging.info('  Fishnet cellsize:   {0}'.format(self.cs))
-#         logging.info('  Fishnet ref. point: {0} {1}'.format(
-#             self.ref_x, self.ref_y))
-#         logging.debug('  Fishnet Buffer Cells: {0}'.format(self.buffer_cells))
-        # snap_pnt = arcpy.Point(self.ref_x, self.ref_y)
-        # snap_pnt.X, snap_pnt.Y = self.ref_x, self.ref_y
-
         # Set spatial reference of hru shapefile
         if arcpy.Exists(self.polygon_path):
             hru_desc = arcpy.Describe(self.polygon_path)
@@ -175,6 +167,7 @@ class HRUParameters():
         self.dem_max_field = fields_cfg.get('FIELDS', 'dem_max_field')
         self.dem_min_field = fields_cfg.get('FIELDS', 'dem_min_field')
         self.dem_adj_field = fields_cfg.get('FIELDS', 'dem_adj_field')
+        
         if self.calc_flow_acc_dem_flag:
             # self.dem_sum_field = 'DEM_SUM'
             # self.dem_count_field = 'DEM_COUNT'
@@ -185,10 +178,9 @@ class HRUParameters():
             self.dem_sum_field = 'DEM_SUM'
             self.dem_count_field = 'DEM_COUNT'
             self.dem_flowacc_field = 'DEM_FLOW_AC'
+        
         self.dem_sink8_field = fields_cfg.get('FIELDS', 'dem_sink8_field')
         self.dem_sink4_field = fields_cfg.get('FIELDS', 'dem_sink4_field')
-#         self.crt_dem_field  = fields_cfg.get('FIELDS', 'crt_dem_field')
-#         self.crt_fill_field = fields_cfg.get('FIELDS', 'crt_fill_field')
         self.area_field = fields_cfg.get('FIELDS', 'area_field')
         self.elev_field = fields_cfg.get('FIELDS', 'elev_field')
         self.aspect_field = fields_cfg.get('FIELDS', 'aspect_field')
@@ -196,8 +188,6 @@ class HRUParameters():
         self.slope_rad_field = fields_cfg.get('FIELDS', 'slope_rad_field')
         self.slope_pct_field = fields_cfg.get('FIELDS', 'slope_pct_field')
         self.topo_index_field = fields_cfg.get('FIELDS', 'topo_index_field')
-        #self.row_field = fields_cfg.get('FIELDS', 'row_field')
-        #self.col_field = fields_cfg.get('FIELDS', 'col_field')
         self.x_field = fields_cfg.get('FIELDS', 'x_field')
         self.y_field = fields_cfg.get('FIELDS', 'y_field')
         self.lat_field = fields_cfg.get('FIELDS', 'lat_field')

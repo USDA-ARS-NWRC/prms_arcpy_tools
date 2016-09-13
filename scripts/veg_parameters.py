@@ -24,7 +24,7 @@ from support_functions import *
 
 
 def veg_parameters(config_path, overwrite_flag=False, debug_flag=False):
-    """Calculate GSFLOW Vegetation Parameters
+    """Calculate PRMS Vegetation Parameters
 
     Args:
         config_file (str): Project config file path

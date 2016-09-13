@@ -50,7 +50,7 @@ def prism_4km_parameters(config_path, data_name='ALL',
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nGSFLOW PRISM Parameters')
+    logging.info('\n PRISM Parameters')
 
     # Check input paths
     hru.check_polygon_path()

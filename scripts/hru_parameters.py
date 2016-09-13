@@ -340,12 +340,9 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     logging.info('  Calculating cell X/Y')
     cell_xy_func(hru.polygon_path, hru.x_field, hru.y_field)
 
-    # Create unique ID, start at top left corner, work down rows
-    # Row/Col numbered from top left corner (1's based numbering)
-#     logging.info('  Calculating cell ID/row/col')
-#     cell_id_col_row_func(
-#         hru.polygon_path, hru.id_field, hru.col_field, hru.row_field,
-#         hru.extent, hru.cs)
+    #Create unique ID
+    logging.info('  Calculating HRU ID')
+    cell_id_col_row_func(hru.polygon_path, hru.id_field)
 
     # Cell Lat/Lon
     logging.info('  Calculating cell lat/lon')
@@ -488,20 +485,15 @@ def cell_lat_lon_func(hru_param_path, lat_field, lon_field, gcs_sr):
             del row
 
 
-def cell_id_col_row_func(hru_param_path, id_field, col_field, row_field,
-                         extent, cs):
+def cell_id_col_row_func(hru_param_path, id_field):
     """"""
-    fields = ('SHAPE@XY', col_field, row_field, id_field)
-    with arcpy.da.UpdateCursor(hru_param_path, fields) as u_cursor:
-        num_cols = (extent.XMax - extent.XMin) / cs
+    with arcpy.da.UpdateCursor(hru_param_path, id_field) as u_cursor:
+        id = 0
         for row in u_cursor:
-            #  Row/Col are 1's based indices
-            row[1] = ((row[0][0] - extent.XMin) // cs) + 1
-            row[2] = ((extent.YMax - row[0][1]) // cs) + 1
-            #  Create unique ID, start at top left corner, work down rows
-            row[3] = row[1] + (row[2] - 1) * num_cols
+            id+=1
+            row[0]=id
             u_cursor.updateRow(row)
-            del row
+        del row
 
 
 def arg_parse():

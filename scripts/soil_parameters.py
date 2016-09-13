@@ -26,7 +26,7 @@ from support_functions import *
 
 
 def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
-    """Calculate GSFLOW Soil Parameters
+    """Calculate PRMS Soil Parameters
 
     Args:
         config_file (str): Project config file path
@@ -47,7 +47,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nGSFLOW Soil Parameters')
+    logging.info('\nPRMS Soil Parameters')
 
     # Check and load input parameters from config file
     hru.read_soil_parameters()
@@ -72,7 +72,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Check input paths
     if not arcpy.Exists(hru.polygon_path):
         logging.error(
-            '\nERROR: Fishnet ({0}) does not exist'.format(
+            '\nERROR: Shapefile ({0}) does not exist'.format(
                 hru.polygon_path))
         sys.exit()
     # All of the soil rasters must exist
@@ -187,31 +187,6 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     rechr_max_obj.save(rechr_max_path)
     del rechr_max_obj
 
-    #  Read in slope raster and convert to radians
-    # dem_slope_obj = math.pi * Raster(dem_slope_path) / 180
-    # porosity_obj = 0.475
-    #
-    #  Gravity drainage to groundwater reservoir linear coefficient
-    # logging.info('\nCalculating SSR2GW_RATE')
-    # logging.info('  Assuming slope is in degrees')
-    # logging.info('  Porosity is currently fixed at: {0}'.format(
-    #    porosity_obj))
-    # ssr2gw_rate_obj = (
-    #    Raster(ksat_path) * porosity_obj * (1 - dem_slope_obj))
-    # ssr2gw_rate_obj.save(ssr2gw_rate_path)
-    # del ssr2gw_rate_obj
-    #
-    #  Gravity drainage to groundwater reservoir linear coefficient
-    # logging.info('\nCalculating SLOWCOEF_L')
-    # logging.info('  Assuming slope is in degrees')
-    # logging.info('  Porosity is currently fixed at: {0}'.format(
-    # slowcoef_lin_obj = (
-    #    Raster(ksat_path) * math.sin(dem_slope_obj) /
-    #    (porosity_obj * hru_length_obj))
-    # slowcoef_lin_obj.save(slowcoef_lin_path)
-    # del slowcoef_lin_obj, hru_length_obj
-    # del dem_slope_obj, porosity_obj
-
     # List of rasters, fields, and stats for zonal statistics
     zs_soil_dict = dict()
     zs_soil_dict[hru.awc_field] = [awc_path, 'MEAN']
@@ -264,9 +239,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
 
     # Calculate SOIL_MOIST_INIT & SOIL_RECHR_INIT from max values
-    arcpy.SelectLayerByAttribute_management(
-        hru_polygon_layer, "NEW_SELECTION",
-        '"{0}" = 1 AND "{1}" >= 0'.format(
+    arcpy.SelectLayerByAttribute_management(hru_polygon_layer, "NEW_SELECTION",'"{0}" = 1 AND "{1}" >= 0'.format(
             hru.type_in_field, hru.moist_max_field))
     logging.info('\nCalculating {0} as {2} * {1}'.format(
         hru.moist_init_field, hru.moist_max_field, hru.moist_init_ratio))
@@ -281,26 +254,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
         hru_polygon_layer, hru.moist_max_field, '0', 'PYTHON')
 
 
-    # Calculate SOIL_MOIST_INIT & SOIL_RECHR_INIT from max values
-    arcpy.SelectLayerByAttribute_management(
-        hru_polygon_layer, "NEW_SELECTION",
-        '"{0}" = 1 AND "{1}" >= 0'.format(
-            hru.type_in_field, hru.rechr_max_field))
-    logging.info('Calculating {0} as {2} * {1}'.format(
-        hru.rechr_init_field, hru.rechr_max_field, hru.moist_init_ratio))
-    arcpy.CalculateField_management(
-        hru.polygon_path, hru.rechr_init_field,
-        '!{0}! * {1}'.format(hru.rechr_max_field, hru.moist_init_ratio), 'PYTHON')
-    arcpy.SelectLayerByAttribute_management(
-        hru_polygon_layer, "SWITCH_SELECTION",
-        '"{0}" != 1'.format(hru.type_in_field))
-    arcpy.CalculateField_management(
-        hru_polygon_layer, hru.rechr_init_field, '0', 'PYTHON')
-    arcpy.CalculateField_management(
-        hru_polygon_layer, hru.rechr_max_field, '0', 'PYTHON')
-
-
-    # Gravity drainage to groundwater reservoir linear coefficient
+     # Gravity drainage to groundwater reservoir linear coefficient
     # Default value is 0.1 (range 0-1)
     # Convert Ksat from um/s to in/day
     # if calc_ssr2gw_rate_flag:

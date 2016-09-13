@@ -26,7 +26,7 @@ from support_functions import *
 
 
 def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
-    """Prepare GSFLOW soil rasters
+    """Prepare PRMS soil rasters
 
     Args:
         config_file (str): Project config file path

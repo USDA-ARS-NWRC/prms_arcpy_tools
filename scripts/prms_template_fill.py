@@ -99,31 +99,31 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     #Get the total number of HRUs from shapefile
     hru_count = int(arcpy.GetCount_management(hru.polygon_path).getOutput(0))
 
-    # Read in dimensions from CSV
-    logging.info('\nReading dimensions CSV')
+    # Read in Parameter Dimensions CSV file
+    logging.info('\nReading PRMS dimensions CSV file')
     dimen_size_dict = dict()
     with open(prms_dimen_csv_path, 'r') as input_f:
         dimen_lines = input_f.readlines()
     input_f.close()
+    
     # Dimensions can be set to a value, a field, or not set
     dimen_lines = [l.strip().split(',') for l in dimen_lines]
     header = dimen_lines[0]
     for line in dimen_lines[1:]:
         dimen_size = line[header.index('SIZE')]
-        if dimen_size in ['CALCULATED']:
+        if dimen_size =='CALCULATED':
             pass
         elif not dimen_size:
             dimen_size_dict[line[header.index('NAME')]] = ''
         else:
             dimen_size_dict[line[header.index('NAME')]] = int(dimen_size)
         del dimen_size
-
+        
     # These parameters equal the total number of HRUs  in the HRU shapefile
-    for dimen_name in ['ngw', 'ngwcell', 'nhru', 'nhrucell', 'nssr']:
+    for dimen_name in ['ngw','nhru', 'nhrucell', 'nssr']:
         dimen_size_dict[dimen_name] = hru_count
         logging.info('  {0} = {1}'.format(
             dimen_name, dimen_size_dict[dimen_name]))
-
 
     # Getting number of lakes
 #     logging.info('\nCalculating number of lake cells')
@@ -144,9 +144,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 #         dimen_size_dict['nreach'] = len(list(
 #             [int(row[1]) for row in s_cursor if int(row[1]) > 0]))
 #     logging.info('  nreach = {0}'.format(dimen_size_dict['nreach']))
-#
+#    
     # Getting number of stream segments
-    
     logging.info('Calculating number of unique stream segments')
     stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID"])
     nsegment = 0
@@ -165,7 +164,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             [int(row[1]) for row in s_cursor if int(row[1]) > 0])))
     logging.info('  nsub = {0}'.format(dimen_size_dict['nsub']))
 
-    # Link HRU fishnet field names to parameter names in '.param'
+    # Link HRU field names to parameter names in '.param'
     param_name_dict = dict()
     param_width_dict = dict()
     param_dimen_count_dict = dict()
@@ -176,7 +175,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     param_values_dict = defaultdict(dict)
 
     # Read in parameters from CSV
-    logging.info('\nReading parameters CSV')
+    logging.info('\nReading PRMS parameters CSV file')
     with open(prms_param_csv_path, 'r') as input_f:
         param_lines = input_f.readlines()
     input_f.close()
@@ -198,7 +197,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         # This will initially read defaults in as a list
         param_default = line[header.index('DEFAULT_VALUE'):]
         # Removing empty strings avoids checking ints/floats
-        param_default = [l for l in param_default if l]
+        param_default = [val for val in param_default if val]
         # For empty lists, set to none
         if not param_default:
             param_default = None
@@ -206,14 +205,15 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         # Check that param_default is a number or field name
         elif len(param_default) == 1:
             param_default = param_default[0]
+            #Check for current type =float when expecting integer
             if isfloat(param_default) and param_type == 1:
                 param_default = int(param_default)
+            #Check for current type =float when expecting float or double
             elif isfloat(param_default) and param_type in [2, 3]:
                 param_default = float(param_default)
             elif param_default == 'CALCULATED':
                 pass
-            elif param_default == 'CRT':
-                pass
+
             elif arcpy.ListFields(hru.polygon_path, param_default):
                 pass
             else:
@@ -224,8 +224,10 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 
         # For multi-value lists, convert values to int/float
         elif len(param_default) >= 2:
+            #Expecting integers
             if param_type == 1:
                 param_default = map(int, param_default)
+            #Expecting float/double
             elif param_type in [2, 3]:
                 param_default = map(float, param_default)
             else:
@@ -235,11 +237,11 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                 sys.exit()
 
         # Check that dimension names are valid
-        for dimen_name in dimen_names:
-            if dimen_name not in dimen_size_dict.keys():
+        for dimension in dimen_names:
+            if dimension not in dimen_size_dict.keys():
                 logging.error(
                     ('\nERROR: The dimension {0} is not set in the ' +
-                     'dimension CSV file').format(dimen_name))
+                     'dimension CSV file').format(dimension))
                 sys.exit()
 
         # Calculate number of dimensions
@@ -249,15 +251,16 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         values_count = prod( [int(dimen_size_dict[dn]) for dn in dimen_names if dimen_size_dict[dn]])
 
         # Write parameter to dictionaries
-        param_name_dict[param_name] = param_name
+        param_name_dict[param_name] = param_name  #What is the point of dict where keys = values? Seems unecessary..
         param_width_dict[param_name] = param_width
         param_dimen_count_dict[param_name] = dimen_count
         param_dimen_names_dict[param_name] = dimen_names
         param_values_count_dict[param_name] = values_count
         param_type_dict[param_name] = param_type
         param_default_dict[param_name] = param_default
+    #END of PRMS Parameter and dimensions CSV read in
 
-    # Apply default values to full dimension
+    # Apply default values to full dimension of default parameters
     logging.info('\nSetting static parameters from defaults')
     for param_name, param_default in param_default_dict.items():
         param_values_count = param_values_count_dict[param_name]
@@ -269,40 +272,54 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             continue
         # For float/int, apply default across dimension size
         elif type(param_default) is float or type(param_default) is int:
-            for i in xrange(param_values_count):
+            for i in range(param_values_count):
                 param_values_dict[param_name][i] = param_default
         # For lists of floats, match up one-to-one for now
         elif len(param_default) == param_values_count:
             for i in xrange(param_values_count):
                 param_values_dict[param_name][i] = param_default[i]
         else:
-            logging.error(
-                ('\nERROR: The default value(s) ({0}) could not be ' +
+            logging.error('\nERROR: The default value(s) ({0}) could not be ' +
                  'broadcast to the dimension length ({1})').format(
-                     param_default, param_values_count))
+                     param_default, param_values_count)
             sys.exit()
-
-    # Read in HRU parameter data from fishnet polygon
-    logging.info('\nReading in variable parameters from fishnet')
-    param_field_dict = dict(
-        [(k, v) for k, v in param_default_dict.items()
-         if type(v) is str and v not in ['CALCULATED', 'CRT']])
+    
+    # Begin to read in HRU parameter data from Hru shapefile
+    logging.info('\nReading in variable parameters from HRU shapefile')
+   
+    #Take all the parameters that are defined using string value to another value and create a dict
+    param_field_dict = {}
+    for key,value in param_default_dict.items():
+        # Add all string valued params except "calculated" 
+        if type(value) is str and value != "CALCULATED":
+            param_field_dict[key] = value
+     
     value_fields = param_field_dict.values()
-    # Use HRU_ID to uniquely identify each cell
-    if hru.id_field not in value_fields:
-        value_fields.append(hru.id_field)
-    hru_id_i = value_fields.index(hru.id_field)
+  
+    # Use OBJECTID to uniquely identify each cell
+    identifier = hru.id_field
+    if  identifier not in value_fields:
+        value_fields.append(identifier)
+    
     # Read in each cell parameter value
-    with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
-        for row in s_cursor:
-            for field_i, (param, field) in enumerate(param_field_dict.items()):
-                if param_type_dict[param] == 1:
-                    param_values_dict[param][row[hru_id_i]] = int(row[field_i])
-                elif param_type_dict[param] in [2, 3]:
-                    param_values_dict[param][row[hru_id_i]] = float(row[field_i])
-                elif param_type_dict[param] == 4:
-                    param_values_dict[param][row[hru_id_i]] = row[field_i]
-                # param_values_dict[param][row[hru_id_i]] = row[field_i]
+    s_cursor = arcpy.da.SearchCursor(hru.polygon_path, value_fields)
+    for row in s_cursor:
+        #Use the identifier to uniquely assign each value in cursor
+        param_row_id = row[value_fields.index(identifier)]
+
+        #Iterate through and add all values in the row
+        for param_name in param_field_dict.values():
+            param_values_dict[param_name][param_row_id] = row[value_fields.index(param_name)]
+#         for param in range(len(param_field_dict.items())):
+#             #if intended field type is meant to be an integer
+#             if param_type_dict[param] == 1:
+#                 value = int(row[field_i])
+#             #if intended field type is meant to be a float or double
+#             elif param_type_dict[param] in [2, 3]:
+#                 value = float(row[field_i])
+#             #if intended field type is meant to be a string
+#             elif param_type_dict[param] == 4:
+#                 value = row[]
 
     # The following will override the parameter CSV values
     # Calculate basin_area from active cells (land and lake)
@@ -319,21 +336,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             [float(row[2]) for row in s_cursor if int(row[1]) >= 1])
     logging.info('  basin_area = {0} acres'.format(
         param_values_dict['basin_area'][0]))
-
-    # Calculate number of columns
-    logging.info('\nCalculating number of columns')
-    param_name_dict['ncol'] = 'ncol'
-    param_width_dict['ncol'] = 0
-    param_dimen_count_dict['ncol'] = 1
-    param_dimen_names_dict['ncol'] = ['one']
-    param_values_count_dict['ncol'] = dimen_size_dict['one']
-    param_type_dict['ncol'] = 1
-#     value_fields = (hru.id_field, hru.col_field)
-#     with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
-#         param_values_dict['ncol'][0] = len(
-#             list(set([int(row[1]) for row in s_cursor])))
-#     logging.info('  ncol = {0}'.format(
-#         param_values_dict['ncol'][0]))
 
     # Calculate mean monthly maximum temperature for all active cells
     logging.info('\nCalculating tmax_index')
@@ -492,27 +494,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     # logging.info('  ncascade = {0}'.format(dimen_size_dict['ncascade']))
     # logging.info('  ncascdgw = {0}'.format(dimen_size_dict['ncascdgw']))
     # raw_input('ENTER')
-
-
-    # DEADBEEF
-    # Override -999 values
-    # logging.info('\nChanging SOIL_MOIST_MAX nodata (-999) to 2')
-    # for i,v in param_values_dict['soil_moist_max'].items():
-    #    if v == -999: param_values_dict['soil_moist_max'][i] = 2
-    # logging.info('Changing SOIL_RECHR_MAX nodata (-999) to 1')
-    # for i,v in param_values_dict['soil_rechr_max'].items():
-    #    if v == -999: param_values_dict['soil_rechr_max'][i] = 1
-    # logging.info('Changing SAT_THRESHOLD nodata (-999) to 4')
-    # for i,v in param_values_dict['sat_threshold'].items():
-    #    if v == -999: param_values_dict['sat_threshold'][i] = 4
-
-    # Override negative values
-    # logging.info('Changing negative SSR2GW_RATE (< 0) to 0.1 (PRMS default)')
-    # for i,v in param_values_dict['ssr2gw_rate'].items():
-    #    if v < 0: param_values_dict['ssr2gw_rate'][i] = 0.1
-    # raw_input('ENTER')
-
-
+ 
     # Write dimensions/parameters to PRMS param file
     logging.info('\nWriting parameter file')
     with open(prms_parameter_path, 'w') as output_f:
@@ -589,6 +571,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
                     output_f.write('{0:f}'.format(param_value) + '\n')
                 elif param_type == 4:
                     output_f.write('{0}'.format(param_value) + '\n')
+            print param_name,len(param_values_dict[param_name])
+
     # Close file
     output_f.close()
     logging.info('Done!')

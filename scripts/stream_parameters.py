@@ -222,7 +222,7 @@ if __name__ == '__main__':
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
 
-    # Calculate GSFLOW Stream Parameters
+    # Calculate PRMS Muskingum Stream Parameters
     stream_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

@@ -88,10 +88,6 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
                  '  Using automatic flow_acc_dem_factor: {0}').format(
                      flow_acc_dem_factor))
 
-    # Calc flow_acc/flow_dir
-    # DEADBEEF - For now, set these to True only if needed
-    # calc_flow_acc_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_acc_flag')
-    # calc_flow_dir_flag = inputs_cfg.getboolean('INPUTS', 'calc_flow_dir_flag')
     if hru.calc_flow_acc_dem_flag:
         calc_flow_acc_flag = True
         calc_flow_dir_flag = True
