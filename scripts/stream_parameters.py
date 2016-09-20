@@ -26,6 +26,7 @@ from arcpy.sa import *
 # import numpy as np
 
 from support_functions import *
+from matplotlib.lines import segment_hits
 
 
 def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
@@ -96,19 +97,19 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
         stream_segments.updateRow(stream)
     stream_segments.reset()
     #Search all streams and find those whos from_nodes match another stream's to_node to determine tosegment param
-    for stream in stream_segments:
-        to_node = stream[1] #to_node value
+    for  segment in stream_segments:
+        to_node = segment[1] #to_node value
         #Check all other segments to see if they match the current segment's
         #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
         for compare in compare_stream_segments:
             if to_node == compare[1]:  #compare to _node to from_node
-                stream[2] = compare[0] # tosegment = compare stream objectid
+                segment[2] = compare[0] # tosegment = compare stream objectid
                 break 
-        stream_segments.updateRow(stream)
+        stream_segments.updateRow(segment)
         compare_stream_segments.reset()
     
     #Delete the structures created for generating the stream tosegment parameter
-    del stream_segments, compare_stream_segments, stream, compare
+    del stream_segments, compare_stream_segments, stream, compare, segment
           
     # Get stream length for each cell
 #     logging.info("Stream length")
