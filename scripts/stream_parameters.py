@@ -76,26 +76,16 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Add fields if necessary to the HRU
     logging.info('\nAdding fields if necessary')
     add_field_func(hru.polygon_path, hru.hru_segment, 'LONG')
-    add_field_func(hru.streams_path, hru.k_coef, 'DOUBLE')
-    add_field_func(hru.streams_path, hru.obsin_segment, 'LONG')
-    add_field_func(hru.streams_path, hru.tosegment, 'LONG')
-    add_field_func(hru.streams_path, hru.x_coef, 'DOUBLE')
+    add_field_func(hru.stream_path, hru.k_coef, 'DOUBLE')
+    add_field_func(hru.stream_path, hru.obsin_segment, 'LONG')
+    add_field_func(hru.stream_path, hru.tosegment, 'LONG')
+    add_field_func(hru.stream_path, hru.x_coef, 'DOUBLE')
     
     # Calculate the TOSEGMENT, k_coef, x_coef
     logging.info("\nCalculating tosegment, k_coef, and x_coef parameters")
     stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID", "to_node", "tosegment", "k_coef", "x_coef"])
     compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID","from_node"])
 
-    #Set all tosegment to zero
-    for stream in stream_segments:
-        #tosegment
-        stream[2] = 0  
-        #K_coef (Muskingum storage coeficient)
-        stream[3] = 1.0
-        #X_coef (Muskingum Routing Coeficient)
-        stream[4] = 0.0
-        stream_segments.updateRow(stream)
-    stream_segments.reset()
     #Search all streams and find those whos from_nodes match another stream's to_node to determine tosegment param
     for  segment in stream_segments:
         to_node = segment[1] #to_node value
@@ -105,11 +95,12 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
             if to_node == compare[1]:  #compare to _node to from_node
                 segment[2] = compare[0] # tosegment = compare stream objectid
                 break 
+            
         stream_segments.updateRow(segment)
         compare_stream_segments.reset()
     
     #Delete the structures created for generating the stream tosegment parameter
-    del stream_segments, compare_stream_segments, stream, compare, segment
+    del stream_segments, compare_stream_segments, compare, segment
           
     # Get stream length for each cell
 #     logging.info("Stream length")

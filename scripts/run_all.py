@@ -94,6 +94,10 @@ def calculate_all_parameters(config_path, data_name='ALL', overwrite_flag=False,
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
     
+    prms_template_fill(
+        config_path=args.ini, overwrite_flag=args.overwrite,
+        debug_flag=args.loglevel==logging.DEBUG)    
+    
 def arg_parse():
     """"""
     parser = argparse.ArgumentParser(

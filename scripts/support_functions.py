@@ -88,15 +88,6 @@ class HRUParameters():
         self.fid_field = inputs_cfg.get('INPUTS', 'orig_fid_field')
         self.type_field = fields_cfg.get('FIELDS', 'type_field')
 
-#         # Check inputs
-#         if self.cs <= 0:
-#             logging.error('\nERROR: Fishnet cellsize must be greater than 0')
-#             sys.exit()
-#         if self.buffer_cells < 0:
-#             logging.error('\nERROR: Buffer cells must be greater than 0')
-#             sys.exit()
-
-        #
         self.param_ws = inputs_cfg.get('INPUTS', 'parameter_folder')
         if not os.path.isdir(self.param_ws):
             os.mkdir(self.param_ws)
@@ -265,7 +256,7 @@ class HRUParameters():
         self.obsin_segment    = fields_cfg.get('FIELDS', 'obsin_segment')
         self.tosegment        = fields_cfg.get('FIELDS', 'tosegment')
         self.x_coef           = fields_cfg.get('FIELDS', 'x_coef')
-        self.stream_path = inputs_cfg.get('INPUTS', 'streams_path')
+        self.stream_path      = inputs_cfg.get('INPUTS', 'streams_path')
 
 
         # if set_ppt_zones_flag:
@@ -1115,7 +1106,7 @@ def get_ini_file(workspace, ini_re, function_str='function'):
     ini_file_list = build_file_list(workspace, ini_re)
     # Filter field list ini file
     ini_file_list = [
-        item for item in ini_file_list if '_field_list.ini' not in item]
+        item for item in ini_file_list if 'field_list.ini' not in item]
     if len(ini_file_list) == 1:
         config_filepath = ini_file_list[0]
     elif len(ini_file_list) > 1:

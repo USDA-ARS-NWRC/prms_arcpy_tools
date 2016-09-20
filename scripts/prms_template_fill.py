@@ -289,13 +289,22 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
    
     #Take all the parameters that are defined using string value to another value and create a dict
     param_field_dict = {}
+    hru_param_field_dict = {}
+    strm_param_field_dict = {}
+
     for key,value in param_default_dict.items():
+        
+        #Stream parameters have to come from stream shapefile not hru, so collect the related params here and index later.
+        if type(value) is str and value in ["TOSEGMENT","X_COEF","K_COEF","OBSIN_SEGMENT"]:
+            strm_param_field_dict[key]=value
         # Add all string valued params except "calculated" 
-        if type(value) is str and value != "CALCULATED":
+        elif type(value) is str and value != "CALCULATED":
             param_field_dict[key] = value
+    
      
     arc_value_fields = param_field_dict.values()
-  
+    strm_arc_value_fields = strm_param_field_dict.values()
+
     # Use an ID to uniquely identify each cell as to place its value correctly under the key
     identifier = hru.id_field
     if  identifier not in arc_value_fields:
@@ -310,7 +319,24 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         #Iterate through and add all values in the row to our dict
         for param_name,arc_param_name in param_field_dict.items():
             param_values_dict[param_name][param_row_id] = row[arc_value_fields.index(arc_param_name)]
-            logging.debug('{0}, {1}, {2}'.format(row[arc_value_fields.index(identifier)],param_name,row[arc_value_fields.index(arc_param_name)]))
+            #logging.debug('{0}, {1}, {2}'.format(row[arc_value_fields.index(identifier)],param_name,row[arc_value_fields.index(arc_param_name)]))
+    del s_cursor
+    
+
+    identifier = "OBJECTID"
+    if  identifier not in arc_value_fields:
+        strm_arc_value_fields.append(identifier)
+    #Now add the stream parameters from the stream shape file.
+    stream_cursor = arcpy.da.SearchCursor(hru.stream_path, strm_arc_value_fields)
+    for row in stream_cursor:
+        #Use the identifier to uniquely assign each value in cursor
+        param_row_id = row[strm_arc_value_fields.index(identifier)]
+
+        #Iterate through and add all values in the row to our dict
+        for param_name,arc_param_name in strm_param_field_dict.items():
+            param_values_dict[param_name][param_row_id] = row[strm_arc_value_fields.index(arc_param_name)]
+    del stream_cursor
+    
 
     # The following will override the parameter CSV values
     # Calculate basin_area from active cells (land and lake)
