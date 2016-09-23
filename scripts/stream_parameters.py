@@ -98,10 +98,27 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
             
         stream_segments.updateRow(segment)
         compare_stream_segments.reset()
-    
+     
     #Delete the structures created for generating the stream tosegment parameter
     del stream_segments, compare_stream_segments, compare, segment
-          
+ 
+    # Calculate the hru_segement
+    logging.info("\nCalculating hru_segment")
+    stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID", "grid_code"])
+    all_hrus = arcpy.da.UpdateCursor(hru.polygon_path, ["OBJECTID","grid_code","HRU_SEG"])
+
+    #Search all streams and HRU to find matching Gridcode to assign the HRU_segment param
+    for  hru in all_hrus:
+        hru_gc = hru[1] #to_node value
+        #Check all other segments to see if they match the current segment's
+        #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
+        for stream in stream_segments:
+            if hru_gc == stream[1]:  #compare to _node to from_node
+                hru[2] = stream[0]
+                break 
+        all_hrus.updateRow(hru)
+        stream_segments.reset()
+    
     # Get stream length for each cell
 #     logging.info("Stream length")
 #     arcpy.MakeFeatureLayer_management(hru.polygon_path, hru_polygon_lyr)
@@ -170,7 +187,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
 #         arcpy.RasterToASCII_conversion(segbasin_raster, segbasin_ascii)
 #         arcpy.RasterToASCII_conversion(subbasin_raster, subbasin_ascii)
 #         sleep(5)
-    logging.info('Done!')
+    logging.info('\nDone!')
 
 def cell_distance(cell_a, cell_b, cs):
     """"""

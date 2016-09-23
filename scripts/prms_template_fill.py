@@ -184,9 +184,11 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     for line in param_lines[1:]:
         # Get parameters from CSV line
         param_name = line[header.index('NAME')]
+        print param_name
         param_width = line[header.index('WIDTH')]
         # This assumes multiple dimensions are separated by semicolon
         dimen_names = line[header.index('DIMENSION_NAMES')].split(';')
+
         # Check that parameter type is 1, 2, 3, or 4
         param_type = int(line[header.index('TYPE')])
         if param_type not in [1, 2, 3, 4]:
@@ -337,23 +339,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             param_values_dict[param_name][param_row_id] = row[strm_arc_value_fields.index(arc_param_name)]
     del stream_cursor
     
-
-    # The following will override the parameter CSV values
-    # Calculate basin_area from active cells (land and lake)
-    logging.info('\nCalculating basin area')
-    param_name_dict['basin_area'] = 'basin_area'
-    param_width_dict['basin_area'] = 0
-    param_dimen_count_dict['basin_area'] = 1
-    param_dimen_names_dict['basin_area'] = ['one']
-    param_values_count_dict['basin_area'] = dimen_size_dict['one']
-    param_type_dict['basin_area'] = 2
-    value_fields = (hru.id_field, hru.type_field, hru.area_field)
-    with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
-        param_values_dict['basin_area'][0] = sum(
-            [float(row[2]) for row in s_cursor if int(row[1]) >= 1])
-    logging.info('  basin_area = {0} acres'.format(
-        param_values_dict['basin_area'][0]))
-
     # Calculate mean monthly maximum temperature for all active cells
     logging.info('\nCalculating tmax_index')
     logging.info('  Converting Celsius to Farenheit')
@@ -375,40 +360,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             tmax_field, param_values_dict['tmax_index'][i]))
         del tmax_values
 
-    logging.info('\nCalculating rain_adj/snow_adj')
-    ratio_field_list = ['PPT_RT_{0:02d}'.format(m) for m in range(1, 13)]
-    param_name_dict['rain_adj'] = 'rain_adj'
-    param_width_dict['rain_adj'] = 4
-    param_dimen_count_dict['rain_adj'] = 2
-    param_dimen_names_dict['rain_adj'] = ['nhru', 'nmonths']
-    param_values_count_dict['rain_adj'] = 12 * hru_count
-    param_type_dict['rain_adj'] = 2
-    param_name_dict['snow_adj'] = 'snow_adj'
-    param_width_dict['snow_adj'] = 4
-    param_dimen_count_dict['snow_adj'] = 2
-    param_dimen_names_dict['snow_adj'] = ['nhru', 'nmonths']
-    param_values_count_dict['snow_adj'] = 12 * hru_count
-    param_type_dict['snow_adj'] = 2
-    ratio_values = []
-    for i, ratio_field in enumerate(ratio_field_list):
-        ratio_values.extend([
-            float(row[1]) for row in sorted(arcpy.da.SearchCursor(
-                hru.polygon_path, (hru.id_field, ratio_field)))])
-    for i, value in enumerate(ratio_values):
-        param_values_dict['rain_adj'][i] = value
-        param_values_dict['snow_adj'][i] = value
-    del ratio_values
-
-    logging.info('\nCalculating subbasin_down')
-    param_name_dict['subbasin_down'] = 'subbasin_down'
-    param_width_dict['subbasin_down'] = 0
-    param_dimen_count_dict['subbasin_down'] = 1
-    param_dimen_names_dict['subbasin_down'] = ['nsub']
-    param_values_count_dict['subbasin_down'] = dimen_size_dict['nsub']
-    param_type_dict['subbasin_down'] = 1
-    # Get list of subbasins and downstream cell for each stream/lake cell
-    # Downstream is calulated from flow direction
-    # logging.info("Cell out-flow dictionary")
     cell_dict = dict()
     fields = [
         hru.type_field, hru.krch_field, hru.lake_id_field,
@@ -428,30 +379,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         cell_dict[cell] = [
             int(row[7]), int(row[3]), next_row_col(int(row[4]), cell)]
         del cell
-
-    # Get subset of cells if subbasin != next_subbasin
-    subbasin_list = []
-    # CELL, (HRU_ID, SUBBASIN, NEXT_CELL)
-    # for cell, row in cell_dict.items():
-    for cell, (hru_id, subbasin, next_cell) in cell_dict.items():
-        # Skip cells that are already subbasin 0 (inactive?)
-        # If next cell isn't in list, assume next cell is out of the model
-        #   and set exit gauge subbasin to 0
-        # If the subbasin of the current cell doesn't match the subbasin
-        #   of the next cell, save the down subbasin
-        if subbasin == 0:
-            continue
-        elif next_cell not in cell_dict.keys():
-            if [subbasin, 0] not in subbasin_list:
-                subbasin_list.append([subbasin, 0])
-        elif subbasin != cell_dict[next_cell][1]:
-            subbasin_list.append([subbasin, cell_dict[next_cell][1]])
-    for i, (subbasin, subbasin_down) in enumerate(sorted(subbasin_list)):
-        param_values_dict['subbasin_down'][i] = subbasin_down
-        logging.debug('  {0}'.format(
-            param_values_dict['subbasin_down'][i]))
-    del subbasin_list
-
 
     # # DEADBEEF - lake_hru is not used in PRMS 3.0.X or gsflow
     # #   It is used in PRMS 4.0 though
@@ -580,7 +507,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             output_f.write(str(param_type) + '\n')
             for i, param_value in param_values_dict[param_name].items():
                 if param_type == 1:
-                    output_f.write('{0:d}'.format(param_value) + '\n')
+                    output_f.write('{0:d}'.format(int(param_value)) + '\n')
                 elif param_type == 2:
                     output_f.write('{0:f}'.format(param_value) + '\n')
                 elif param_type == 3:
@@ -590,8 +517,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 
     # Close file
     output_f.close()
-    logging.info('Done!')
-
+    logging.info('\nDone!')
 
 def prod(iterable):
     return reduce(operator.mul, iterable, 1)

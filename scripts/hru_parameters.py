@@ -281,7 +281,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.ksat_field, 'FLOAT')
     add_field_func(hru.polygon_path, hru.soil_depth_field, 'FLOAT')
     add_field_func(hru.polygon_path, hru.root_depth_field, 'FLOAT')
-    add_field_func(hru.polygon_path, hru.soil_type_field, 'FLOAT')
+    add_field_func(hru.polygon_path, hru.soil_type_field, 'SHORT')
     add_field_func(hru.polygon_path, hru.moist_init_field, 'FLOAT')
     add_field_func(hru.polygon_path, hru.moist_max_field, 'FLOAT')
     add_field_func(hru.polygon_path, hru.rechr_init_field, 'FLOAT')
@@ -313,20 +313,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
         add_field_func(
             hru.polygon_path, 'PPT_RT_{0}'.format(month), 'FLOAT')
 
-    # Layer thickness and bottom fields
-#     if hru.calc_layer_thickness_flag:
-#         add_field_func(hru.polygon_path, hru.alluv_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.alluv_thick_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay1_thick_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay2_thick_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay3_thick_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay4_thick_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay1_bottom_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay2_bottom_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay3_bottom_field, 'FLOAT')
-#         add_field_func(hru.polygon_path, hru.lay4_bottom_field, 'FLOAT')
-
-
+   
     # Id field is added by default to new fishnets
     if arcpy.ListFields(hru.polygon_path, 'Id'):
         arcpy.DeleteField_management(hru.polygon_path, 'Id')

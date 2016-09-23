@@ -148,7 +148,7 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     if hru.clip_root_depth_flag:
         add_field_func(hru.polygon_path, hru.soil_depth_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.root_depth_field, 'DOUBLE')
-    add_field_func(hru.polygon_path, hru.soil_type_field, 'DOUBLE')
+    add_field_func(hru.polygon_path, hru.soil_type_field, 'SHORT')
     add_field_func(hru.polygon_path, hru.moist_init_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.moist_max_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.rechr_init_field, 'DOUBLE')
