@@ -57,47 +57,67 @@ def calculate_all_parameters(config_path, data_name='ALL', overwrite_flag=False,
     Returns:
         None
     """
+    logging.info('\nCalculating PRMS HRU Parameters...')
     hru_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
     
+    logging.info("\nFinished!")
+    
+    logging.info("\nCalculating PRMS DEM Parameters...")
     dem_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
+    logging.info("\nFinished!")
     
+    logging.info("\nCalculating PRMS Vegetation Parameters...")  
     veg_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
-
+    logging.info("\nFinished!")
+    
+    logging.info("\nPreparing Soil Rasters...")  
     soil_raster_prep(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)    
-
+    logging.info("\nFinished!")
+    
+    logging.info("\nCalculating PRMS Soil Parameters...")  
     soil_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
- 
+    logging.info("\nFinished!")
+    
+    logging.info("\nCalculating PRMS Impervious Parameters...")  
     impervious_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
+    logging.info("\nFinished!")
     
+    logging.info("\nCalculating PRISM 4Km Parameters...")  
     prism_4km_parameters(
         config_path=args.ini, data_name=args.type,
         overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
-   
+    logging.info("\nFinished!")
+    
+    logging.info("\nCalculating PPT Ratio Parameters...")  
     ppt_ratio_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
-
+    logging.info("\nFinished!")
+    
+    logging.info("\nCalculating PRMS Stream Parameters...")  
     stream_parameters(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
+    logging.info("\nFinished!")
     
+    logging.info("\n Writing Parameters to Input File for PRMS...")  
     prms_template_fill(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)    
-    
+    logging.info("\nParameters are now written to file and can be used for PRMS Simulations.")
 def arg_parse():
     """"""
     parser = argparse.ArgumentParser(
