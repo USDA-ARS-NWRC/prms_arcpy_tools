@@ -143,50 +143,6 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     env.workspace = hru.param_ws
     env.scratchWorkspace = hru.scratch_ws
 
-    # Create HRU points at polygon centroids
-    if not arcpy.Exists(hru.point_path):
-        logging.info('\n  Building HRU point shapefile')
-        # FeatureToPoint will copy all fields in hru.polygon_path
-        # arcpy.FeatureToPoint_management(
-        #    hru.polygon_path, hru.point_path)
-        # Build point_path directly
-        arcpy.CreateFeatureclass_management(
-            os.path.dirname(hru.point_path),
-            os.path.basename(hru.point_path), 'POINT')
-        arcpy.DefineProjection_management(hru.point_path, hru.sr)
-        arcpy.AddField_management(hru.point_path, hru.fid_field, 'LONG')
-        hru_centroid_list = [
-            row for row in  arcpy.da.SearchCursor(
-                hru.polygon_path, ['OID@', 'SHAPE@XY'])]
-        with arcpy.da.InsertCursor(
-            hru.point_path, ['OID@', 'SHAPE@XY', hru.fid_field]) as update_c:
-            for hru_centroid in hru_centroid_list:
-                update_c.insertRow(
-                    [hru_centroid[0], hru_centroid[1], hru_centroid[0]])
-        del hru_centroid_list
-        
-    # Check existing HRU points
-    else:
-        # Remove any extra fields
-        field_remove_list = [
-            f.name for f in arcpy.ListFields(hru.point_path)
-            if f.name not in ['FID', 'Shape', hru.fid_field]]
-        if field_remove_list:
-            logging.info('\n  Removing HRU point fields')
-            for field in field_remove_list:
-                if field in ['FID', 'Shape', hru.fid_field]:
-                    continue
-                logging.debug('    {0}'.format(field))
-                try: arcpy.DeleteField_management(hru.point_path, field)
-                except: continue
-                
-        # Save original FID
-        if len(arcpy.ListFields(hru.point_path, hru.fid_field)) == 0:
-            arcpy.AddField_management(
-                hru.point_path, hru.fid_field, 'LONG')
-        arcpy.CalculateField_management(
-            hru.point_path, hru.fid_field, '!FID!', 'PYTHON')
-        del field_remove_list
 
     # Add all output fields
     logging.info('\nAdding fields if necessary')
@@ -203,6 +159,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.dem_min_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_max_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.dem_adj_field, 'DOUBLE')
+
     if hru.calc_flow_acc_dem_flag:
         add_field_func(hru.polygon_path, hru.dem_flowacc_field, 'DOUBLE')
         add_field_func(hru.polygon_path, hru.dem_sum_field, 'DOUBLE')
@@ -225,7 +182,8 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.y_field, 'LONG')
     add_field_func(hru.polygon_path, hru.lat_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.lon_field, 'DOUBLE')
-
+    add_field_func(hru.polygon_path, hru.xlong_field, 'DOUBLE')
+    add_field_func(hru.polygon_path, hru.ylat_field, 'DOUBLE')
     # Lake fields
     add_field_func(hru.polygon_path, hru.lake_id_field, 'LONG')
     add_field_func(hru.polygon_path, hru.lake_area_field, 'DOUBLE')
@@ -298,6 +256,22 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # add_field_func(hru.polygon_path, hru.carea_min_field, 'FLOAT')
     add_field_func(hru.polygon_path, hru.carea_max_field, 'FLOAT')
 
+    # Create HRU points at polygon centroids
+    if arcpy.Exists(hru.point_path):
+        logging.info('\n  Adding HRU xlong and ylat')
+        s_cursor = arcpy.da.SearchCursor(hru.point_path,['FID','SHAPE@X','SHAPE@Y'])
+        hru_cursor = arcpy.da.UpdateCursor(hru.polygon_path, ['FID', 'XLONG', 'YLAT'])
+        for current_hru in hru_cursor:
+            for centroid in s_cursor:
+                if current_hru[0] == centroid[0]:
+                    current_hru[1] = centroid[1]
+                    current_hru[2] = centroid[2]
+
+                    break
+            hru_cursor.updateRow(current_hru)
+            s_cursor.reset()
+        del current_hru, centroid, s_cursor, hru_cursor
+
     # PRISM mean monthly fields
     month_list = ['{0:02d}'.format(m) for m in range(1, 13)]
     month_list.extend(['14'])
@@ -323,9 +297,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     logging.info('  Saving original HRU FID to {0}'.format(hru.fid_field))
     arcpy.CalculateField_management(hru.polygon_path, hru.fid_field, '!FID!', 'PYTHON')
 
-    # Cell X/Y
-    logging.info('  Calculating cell X/Y')
-    cell_xy_func(hru.polygon_path, hru.x_field, hru.y_field)
+
 
     #Create unique ID
     logging.info('  Calculating HRU ID')

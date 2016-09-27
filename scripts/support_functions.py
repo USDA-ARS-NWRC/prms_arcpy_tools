@@ -183,6 +183,8 @@ class HRUParameters():
         self.y_field = fields_cfg.get('FIELDS', 'y_field')
         self.lat_field = fields_cfg.get('FIELDS', 'lat_field')
         self.lon_field = fields_cfg.get('FIELDS', 'lon_field')
+        self.xlong_field = fields_cfg.get('FIELDS', 'xlong_field')
+        self.ylat_field = fields_cfg.get('FIELDS', 'ylat_field')
 
         if self.set_lake_flag:
             self.lake_id_field = fields_cfg.get('FIELDS', 'lake_id_field')
