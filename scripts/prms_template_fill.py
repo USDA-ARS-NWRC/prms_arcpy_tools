@@ -65,7 +65,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     prms_dimen_csv_path = config.get('INPUTS', 'prms_dimen_csv_path')
     prms_param_csv_path = config.get('INPUTS', 'prms_param_csv_path')
     parameter_ws = config.get('INPUTS', 'parameter_folder')
-
+    met_station_loc_path = config.get('INPUTS', 'station_loc_path')
     # Scratch workspace
     try:
         scratch_name = config.get('INPUTS', 'scratch_name')
@@ -93,9 +93,15 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         logging.error('\nERROR: The parameters CSV file does not exist\n')
         sys.exit()
     
+    #If the file already exists, remove it
     if os.path.isfile(prms_parameter_path):
         os.remove(prms_parameter_path)
-
+        
+    #Check is meterology location file is valid    
+    if not os.path.isfile(met_station_loc_path):
+        logging.error('\nERROR: The metrology station location CSV file does not exist')
+        logging.debug('\n \t {0}'.format(met_station_loc_path))
+        sys.exit()
     #Get the total number of HRUs from shapefile
     hru_count = int(arcpy.GetCount_management(hru.polygon_path).getOutput(0))
 
@@ -104,7 +110,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     dimen_size_dict = dict()
     with open(prms_dimen_csv_path, 'r') as input_f:
         dimen_lines = input_f.readlines()
-    input_f.close()
+    input_f.close()   
     
     # Dimensions can be set to a value, a field, or not set
     dimen_lines = [l.strip().split(',') for l in dimen_lines]
@@ -125,6 +131,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         logging.info('  {0} = {1}'.format(
             dimen_name, dimen_size_dict[dimen_name]))
 
+    
     # Getting number of lakes
 #     logging.info('\nCalculating number of lake cells')
 #     logging.info('  Lake cells are {0} >= 0'.format(
@@ -146,7 +153,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 #     logging.info('  nreach = {0}'.format(dimen_size_dict['nreach']))
 #    
     # Getting number of stream segments
-    logging.info('Calculating number of unique stream segments')
+    logging.info('Calculating number of stream segments')
     stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID"])
     nsegment = 0
     for segment in stream_segments:
@@ -262,6 +269,27 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         param_default_dict[param_name] = param_default
     #END of PRMS Parameter and dimensions CSV read in
 
+    #Write in xlong and ylat for precip and temp stations
+    #Assumes that temp and precip are the same stations.
+    logging.info('\nReading MET location CSV file')
+    station_dict = dict()
+    with open(met_station_loc_path, 'r') as input_f:
+        station_lines = input_f.readlines()
+    station_lines = [l.strip().split(',') for l in station_lines]
+    
+    for loc_param in ['psta_xlong','tsta_xlong']:
+        loc_lst = dict()
+        for key,station in enumerate(station_lines[1:]):
+            loc_lst[key]=float(station[4])
+        param_values_dict[loc_param] = loc_lst
+
+    for loc_param in ['psta_ylat','tsta_ylat']:
+        loc_lst = dict()
+        for key,station in enumerate(station_lines[1:]):
+            loc_lst[key]=float(station[5])
+        param_values_dict[loc_param] = loc_lst
+            
+        
     # Apply default values to full dimension of default parameters
     logging.info('\nSetting static parameters from defaults')
     for param_name, param_default in param_default_dict.items():
