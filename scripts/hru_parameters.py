@@ -260,7 +260,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     if arcpy.Exists(hru.point_path):
         logging.info('\n  Adding HRU xlong and ylat')
         s_cursor = arcpy.da.SearchCursor(hru.point_path,['FID','SHAPE@X','SHAPE@Y'])
-        hru_cursor = arcpy.da.UpdateCursor(hru.polygon_path, ['FID', 'XLONG', 'YLAT'])
+        hru_cursor = arcpy.da.UpdateCursor(hru.polygon_path, ['FID', 'HRU_XLONG', 'HRU_YLAT'])
         for current_hru in hru_cursor:
             for centroid in s_cursor:
                 if current_hru[0] == centroid[0]:
