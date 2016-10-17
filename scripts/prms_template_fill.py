@@ -319,7 +319,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
    
     #Take all the parameters that are defined using string value to another value and create a dict
     param_field_dict = {}
-    hru_param_field_dict = {}
     strm_param_field_dict = {}
 
     for key,value in param_default_dict.items():
