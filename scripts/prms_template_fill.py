@@ -291,6 +291,13 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         for key,station in enumerate(station_lines[1:]):
             loc_lst[key]=float(station[5])
         param_values_dict[loc_param] = loc_lst
+        
+    # psta_elev is not needed for precip_dist2 but for others
+    for loc_param in ['psta_elev','tsta_elev']:
+        loc_lst = dict()
+        for key,station in enumerate(station_lines[1:]):
+            loc_lst[key]=float(station[3])
+        param_values_dict[loc_param] = loc_lst
             
         
     # Apply default values to full dimension of default parameters
