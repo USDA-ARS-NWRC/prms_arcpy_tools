@@ -217,10 +217,13 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             #Check for current type =float when expecting integer
             if isfloat(param_default) and param_type == 1:
                 param_default = int(param_default)
+            
             #Check for current type =float when expecting float or double
             elif isfloat(param_default) and param_type in [2, 3]:
                 param_default = float(param_default)
-            elif param_default == 'CALCULATED':
+            
+            #Check for stream based parameters or is these are calculated.
+            elif param_default in ['CALCULATED',"TOSEGMENT"]:
                 pass
 
             elif arcpy.ListFields(hru.polygon_path, param_default):
@@ -324,7 +327,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     for key,value in param_default_dict.items():
         
         #Stream parameters have to come from stream shapefile not hru, so collect the related params here and index later.
-        if type(value) is str and value in ["TOSEGMENT","X_COEF","K_COEF","OBSIN_SEGMENT"]:
+        if type(value) is str and value in ["TOSEGMENT"]:
             strm_param_field_dict[key]=value
         # Add all string valued params except "calculated" 
         elif type(value) is str and value != "CALCULATED":
@@ -352,7 +355,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     del s_cursor
     
 
-    identifier = "OBJECTID"
+    identifier = "FID"
     if  identifier not in arc_value_fields:
         strm_arc_value_fields.append(identifier)
     #Now add the stream parameters from the stream shape file.

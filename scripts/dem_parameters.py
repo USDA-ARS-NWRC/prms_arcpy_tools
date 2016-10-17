@@ -61,7 +61,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
     # read the DEM parameters from the file, check if DEM exists
     hru.read_DEM_parameters()
-    
+
     if hru.calc_flow_acc_dem_flag:
         # Get factor for scaling dem_flowacc values to avoid 32 bit int limits
         try:
@@ -146,7 +146,6 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     flow_acc_path = os.path.join(dem_temp_ws, 'flow_acc.img')
     flow_acc_dem_path = os.path.join(dem_temp_ws, 'flow_acc_x_dem.img')
     flow_acc_filter_path = os.path.join(dem_temp_ws, 'flow_acc_filter.img')
-    dem_integer_path = os.path.join(dem_temp_ws, 'dem_integer.img')
     dem_slope_path = os.path.join(dem_temp_ws, 'dem_slope.img')
     dem_aspect_path = os.path.join(dem_temp_ws, 'dem_aspect.img')
     dem_aspect_reclass_path = os.path.join(dem_temp_ws, 'aspect_reclass.img')
@@ -188,7 +187,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     add_field_func(hru.polygon_path, hru.tmax_adj_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.tmin_adj_field, 'DOUBLE')
 
-    
+
 
     # Assume all DEM rasters will need to be rebuilt
     # Check slope, aspect, and proejcted DEM rasters
@@ -205,16 +204,16 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     dem_orig_sr = Raster(hru.dem_orig_path).spatialReference
     logging.debug('  DEM GCS:   {0}'.format(
         dem_orig_sr.GCS.name))
-    
+
     # Remove existing projected DEM
     if arcpy.Exists(dem_path):
         arcpy.Delete_management(dem_path)
-        
+
     # Set preferred transforms
     transform_str = transform_func(hru.sr, dem_orig_sr)
     logging.debug('  Transform: {0}'.format(transform_str))
     logging.debug('  Projection method: {0}'.format(hru.dem_proj_method))
-    
+
     # Project DEM
     # DEADBEEF - Arc10.2 ProjectRaster does not honor extent
     logging.debug('  Input SR:  {0}'.format(dem_orig_sr.exportToString()))
@@ -270,11 +269,6 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         flow_acc_dem_obj.save(flow_acc_dem_path)
         del flow_acc_dem_obj, flow_acc_filter_obj
 
-    # Calculate an integer version of DEM for median zonal stats
-    dem_integer_obj = Int(Raster(dem_path) * 100)
-    dem_integer_obj.save(dem_integer_path)
-    del dem_integer_obj
-
     # Calculate slope
     logging.info('Calculating slope raster')
     dem_slope_obj = Slope(dem_fill_path, 'DEGREE')
@@ -324,7 +318,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # zs_dem_dict[hru.dem_median_field] = [dem_integer_path, 'MEDIAN']
     zs_dem_dict[hru.dem_max_field] = [dem_path, 'MAXIMUM']
     zs_dem_dict[hru.dem_min_field] = [dem_path, 'MINIMUM']
-    # zs_dem_dict[hru.elev_field]   = [dem_integer_path, 'MEDIAN']
+    zs_dem_dict[hru.elev_field]   = [dem_path, 'MEAN']
     # zs_dem_dict[hru.aspect_field] = [dem_aspect_path, 'MINIMUM']
     zs_dem_dict[hru.aspect_field] = [dem_aspect_reclass_path, 'MAJORITY']
     zs_dem_dict[hru.slope_deg_field] = [dem_slope_path, 'MEAN']
@@ -346,12 +340,12 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Calculate HRU_ELEV (HRU elevation in feet)
     logging.info('\nCalculating initial {0} from {1}'.format(
         hru.elev_field, hru.dem_mean_field))
-    if linear_unit in ['METERS']:
+    if linear_unit in ['METERS','METER']:
         logging.info('  Converting from meters to feet')
         arcpy.CalculateField_management(
             hru.polygon_path, hru.elev_field,
             '!{0}! * 3.28084'.format(hru.dem_mean_field), 'PYTHON')
-    elif linear_unit in ['FOOT_US', 'FOOT']:
+    elif linear_unit in ['FOOT_US', 'FOOT', 'FEET']:
         arcpy.CalculateField_management(
             hru.polygon_path, hru.elev_field,
             '!{0}!'.format(hru.dem_mean_field), 'PYTHON')
@@ -427,7 +421,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         (len(arcpy.ListFields(hru.polygon_path, 'TMAX_07')) == 0 or
          field_stat_func(hru.polygon_path, 'TMAX_07', 'MAXIMUM') == 0)):
         hru.calc_prism_jh_coef_flag = False
-        
+
     # Use PRISM temperature values
     if hru.calc_prism_jh_coef_flag:
         logging.info('  Using PRISM temperature values')
@@ -503,7 +497,7 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
         arcpy.Delete_management(hru_polygon_layer)
         del hru_polygon_layer
-        
+
     logging.info('Done!')
 
 
