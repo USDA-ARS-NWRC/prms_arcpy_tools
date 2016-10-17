@@ -378,7 +378,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     
     # Calculate mean monthly maximum temperature for all active cells
     logging.info('\nCalculating tmax_index')
-    logging.info('  Converting Celsius to Farenheit')
     param_name_dict['tmax_index'] = 'tmax_index'
     param_width_dict['tmax_index'] = 15
     param_dimen_count_dict['tmax_index'] = 1
@@ -391,8 +390,15 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             hru.polygon_path, (hru.type_field, tmax_field),
             where_clause='"{0}" >= 1'.format(hru.type_field))]
         tmax_c = sum(tmax_values) / len(tmax_values)
-        tmax_f = 1.8 * tmax_c + 32
-        param_values_dict['tmax_index'][i] = tmax_f
+        
+        # convert from celcius to farenheit
+        if param_values_dict['temp_units'][0] == 0:
+            logging.info('  Converting Celsius to Farenheit')
+            tmax_f = 1.8 * tmax_c + 32
+            param_values_dict['tmax_index'][i] = tmax_f
+        else:
+            param_values_dict['tmax_index'][i] = tmax_c
+            
         logging.info('  {0} = {1}'.format(
             tmax_field, param_values_dict['tmax_index'][i]))
         del tmax_values
