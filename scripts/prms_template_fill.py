@@ -23,6 +23,7 @@ import arcpy
 # from arcpy import env
 
 from support_functions import *
+from string import upper
 
 
 def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
@@ -65,7 +66,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     prms_dimen_csv_path = config.get('INPUTS', 'prms_dimen_csv_path')
     prms_param_csv_path = config.get('INPUTS', 'prms_param_csv_path')
     parameter_ws = config.get('INPUTS', 'parameter_folder')
-    met_station_loc_path = config.get('INPUTS', 'station_loc_path')
+    obs_station_loc_path = config.get('INPUTS', 'station_loc_path')
     # Scratch workspace
     try:
         scratch_name = config.get('INPUTS', 'scratch_name')
@@ -98,9 +99,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         os.remove(prms_parameter_path)
         
     #Check is meterology location file is valid    
-    if not os.path.isfile(met_station_loc_path):
-        logging.error('\nERROR: The metrology station location CSV file does not exist')
-        logging.debug('\n \t {0}'.format(met_station_loc_path))
+    if not os.path.isfile(obs_station_loc_path):
+        logging.error('\nERROR: The station observations location CSV file \n{0} does not exist'.format(obs_station_path))
         sys.exit()
     #Get the total number of HRUs from shapefile
     hru_count = int(arcpy.GetCount_management(hru.polygon_path).getOutput(0))
@@ -131,8 +131,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         logging.info('  {0} = {1}'.format(
             dimen_name, dimen_size_dict[dimen_name]))
 
-    
-    # Getting number of lakes
+        # Getting number of lakes
 #     logging.info('\nCalculating number of lake cells')
 #     logging.info('  Lake cells are {0} >= 0'.format(
 #         hru.lake_id_field))
@@ -271,35 +270,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         param_type_dict[param_name] = param_type
         param_default_dict[param_name] = param_default
     #END of PRMS Parameter and dimensions CSV read in
-
-    #Write in xlong and ylat for precip and temp stations
-    #Assumes that temp and precip are the same stations.
-    logging.info('\nReading MET location CSV file')
-    station_dict = dict()
-    with open(met_station_loc_path, 'r') as input_f:
-        station_lines = input_f.readlines()
-    station_lines = [l.strip().split(',') for l in station_lines]
-    
-    for loc_param in ['psta_xlong','tsta_xlong']:
-        loc_lst = dict()
-        for key,station in enumerate(station_lines[1:]):
-            loc_lst[key]=float(station[4])
-        param_values_dict[loc_param] = loc_lst
-
-    for loc_param in ['psta_ylat','tsta_ylat']:
-        loc_lst = dict()
-        for key,station in enumerate(station_lines[1:]):
-            loc_lst[key]=float(station[5])
-        param_values_dict[loc_param] = loc_lst
-        
-    # psta_elev is not needed for precip_dist2 but for others
-    for loc_param in ['psta_elev','tsta_elev']:
-        loc_lst = dict()
-        for key,station in enumerate(station_lines[1:]):
-            loc_lst[key]=float(station[3])
-        param_values_dict[loc_param] = loc_lst
-            
-        
+      
     # Apply default values to full dimension of default parameters
     logging.info('\nSetting static parameters from defaults')
     for param_name, param_default in param_default_dict.items():
@@ -319,10 +290,60 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             for i in xrange(param_values_count):
                 param_values_dict[param_name][i] = param_default[i]
         else:
-            logging.error('\nERROR: The default value(s) ({0}) could not be ' +
-                 'broadcast to the dimension length ({1})').format(
-                     param_default, param_values_count)
+            logging.error('\nERROR: The default value(s) ({0}) could not be ' + 
+                          'broadcast to the dimension length ({1})'.format(param_default, param_values_count))
             sys.exit()
+    
+    #Write in xlong and ylat and station type for obs stations
+    logging.info('\nReading MET location CSV file')
+    station_dict = dict()
+    with open(obs_station_loc_path, 'r') as input_f:
+        station_lines = input_f.readlines()
+    station_lines = [l.strip().split(',') for l in station_lines]
+        
+    #Skip the first line b/c its a header
+    for i,station in enumerate(station_lines[1:]):
+        obs_params = {}
+        station_type = upper(station[6])
+        
+        #Check for temp stations
+        if "T" in station_type:
+            #Cycle through temp station params
+            for j, param in enumerate(['tsta_elev','tsta_xlong', 'tsta_ylat']):
+                obs_params[param] = float(station[j+3])
+                param_values_count_dict[param]+=1
+            #increase the number of obs
+            dimen_size_dict["ntemp"]+=1
+
+            logging.info("\tFound Temperature Station named {0}".format(station[0]))
+        
+        #Check for precip stations
+        if "P" in station_type:
+            #Cycle through temp station params
+            for j, param in enumerate(['psta_elev','psta_xlong', 'psta_ylat']):
+                obs_params[param] = float(station[j+2])
+                param_values_count_dict[param]+=1
+            #increase the number of obs
+            dimen_size_dict["nrain"]+=1
+
+            logging.info("\tFound Preciptitation Station named {0}".format(station[0]))
+
+        #Check for runoff stations
+        if "R" in station_type:
+            dimen_size_dict["nobs"] +=1
+            
+            #Check if it is at the outlet.
+            if "O" in station_type:
+                #Index is zero based, count is not.
+                obs_params['outlet_sta'] = dimen_size_dict["nobs"]-1
+                param_values_count_dict['outlet_sta']+=1                
+                logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
+            else:
+                logging.info("\tFound Runnoff Station {0}".format(station[0]))
+            
+        for key,value in obs_params.items():
+            param_values_dict[key][i] = value
+        
     
     # Begin to read in HRU parameter data from Hru shapefile
     logging.info('\nReading in variable parameters from HRU shapefile')
