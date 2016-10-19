@@ -100,7 +100,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         
     #Check is meterology location file is valid    
     if not os.path.isfile(obs_station_loc_path):
-        logging.error('\nERROR: The station observations location CSV file \n{0} does not exist'.format(obs_station_path))
+        logging.error('\nERROR: The station observations location CSV file \n{0} does not exist'.format(obs_station_loc_path))
         sys.exit()
     #Get the total number of HRUs from shapefile
     hru_count = int(arcpy.GetCount_management(hru.polygon_path).getOutput(0))
@@ -118,7 +118,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     for line in dimen_lines[1:]:
         dimen_size = line[header.index('SIZE')]
         if dimen_size =='CALCULATED':
-            pass
+            dimen_size_dict[line[header.index('NAME')]]=0
         elif not dimen_size:
             dimen_size_dict[line[header.index('NAME')]] = ''
         else:
@@ -270,8 +270,68 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         param_type_dict[param_name] = param_type
         param_default_dict[param_name] = param_default
     #END of PRMS Parameter and dimensions CSV read in
-      
-    # Apply default values to full dimension of default parameters
+
+   
+    #Write in xlong and ylat and station type for obs stations
+    logging.info('\nReading Observations location CSV file:')
+
+    with open(obs_station_loc_path, 'r') as input_f:
+        station_lines = input_f.readlines()
+    station_lines = [l.strip().split(',') for l in station_lines]
+        
+    #Skip the first line b/c its a header
+    for i,station in enumerate(station_lines[1:]):
+        obs_params = {}
+        station_type = upper(station[6])
+        
+        #Check for temp stations
+        if "T" in station_type:
+            #Cycle through temp station params
+            for j, param in enumerate(['tsta_elev','tsta_xlong', 'tsta_ylat']):
+                obs_params[param] = float(station[j+3])
+                #param_values_count_dict[param]+=1
+            #increase the number of obs
+            dimen_size_dict["ntemp"]+=1
+
+            logging.info("\tFound Temperature Station named {0}".format(station[0]))
+        
+        #Check for precip stations
+        if "P" in station_type:
+            #Cycle through temp station params
+            for j, param in enumerate(['psta_elev','psta_xlong', 'psta_ylat']):
+                obs_params[param] = float(station[j+3])
+                #param_values_count_dict[param]+=1
+            #increase the number of obs
+            dimen_size_dict["nrain"]+=1
+
+            logging.info("\tFound Precipitation Station named {0}".format(station[0]))
+
+        #Check for runoff stations
+        if "R" in station_type:
+            dimen_size_dict["nobs"] +=1
+            
+            #Check if it is at the outlet. we can only handle one outlet at the moment.
+            if "O" in station_type:
+                #Index is zero based, count is not.
+                obs_params['outlet_sta'] = 0                
+                logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
+            else:
+                logging.info("\tFound Runnoff Station named {0}".format(station[0]))
+            
+        #Record the values of the station params to our main dict for params.
+        for key,value in obs_params.items():
+            param_values_dict[key][i] = value
+
+    
+    #Update all the parameter sizes again.
+    for param in param_name_dict:
+        dimen_names = [dm for dm in param_dimen_names_dict[param]]        
+        values_count = prod( [int(dimen_size_dict[dn]) for dn in dimen_names if dimen_size_dict[dn]])           
+        param_values_count_dict[param] = values_count
+        if param in ["psta_mon", "tsta_elev", "psta_elev"]:
+            print [param, values_count]
+
+     # Apply default values to full dimension of default parameters
     logging.info('\nSetting static parameters from defaults')
     for param_name, param_default in param_default_dict.items():
         param_values_count = param_values_count_dict[param_name]
@@ -292,59 +352,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         else:
             logging.error('\nERROR: The default value(s) ({0}) could not be ' + 
                           'broadcast to the dimension length ({1})'.format(param_default, param_values_count))
-            sys.exit()
-    
-    #Write in xlong and ylat and station type for obs stations
-    logging.info('\nReading MET location CSV file')
-    station_dict = dict()
-    with open(obs_station_loc_path, 'r') as input_f:
-        station_lines = input_f.readlines()
-    station_lines = [l.strip().split(',') for l in station_lines]
-        
-    #Skip the first line b/c its a header
-    for i,station in enumerate(station_lines[1:]):
-        obs_params = {}
-        station_type = upper(station[6])
-        
-        #Check for temp stations
-        if "T" in station_type:
-            #Cycle through temp station params
-            for j, param in enumerate(['tsta_elev','tsta_xlong', 'tsta_ylat']):
-                obs_params[param] = float(station[j+3])
-                param_values_count_dict[param]+=1
-            #increase the number of obs
-            dimen_size_dict["ntemp"]+=1
-
-            logging.info("\tFound Temperature Station named {0}".format(station[0]))
-        
-        #Check for precip stations
-        if "P" in station_type:
-            #Cycle through temp station params
-            for j, param in enumerate(['psta_elev','psta_xlong', 'psta_ylat']):
-                obs_params[param] = float(station[j+2])
-                param_values_count_dict[param]+=1
-            #increase the number of obs
-            dimen_size_dict["nrain"]+=1
-
-            logging.info("\tFound Preciptitation Station named {0}".format(station[0]))
-
-        #Check for runoff stations
-        if "R" in station_type:
-            dimen_size_dict["nobs"] +=1
-            
-            #Check if it is at the outlet.
-            if "O" in station_type:
-                #Index is zero based, count is not.
-                obs_params['outlet_sta'] = dimen_size_dict["nobs"]-1
-                param_values_count_dict['outlet_sta']+=1                
-                logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
-            else:
-                logging.info("\tFound Runnoff Station {0}".format(station[0]))
-            
-        for key,value in obs_params.items():
-            param_values_dict[key][i] = value
-        
-    
+            sys.exit() 
+          
     # Begin to read in HRU parameter data from Hru shapefile
     logging.info('\nReading in variable parameters from HRU shapefile')
    
@@ -540,7 +549,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             logging.debug('    {0}'.format(param_name))
             output_f.write(break_str+'\n')
             output_f.write('{0} {1}\n'.format(
-                param_name, param_width_dict[param_name]))
+                param_name, param_width_dict[param_name]))    
             output_f.write('{0}\n'.format(param_dimen_count_dict[param_name]))
             for dimen_name in param_dimen_names_dict[param_name]:
                 output_f.write(dimen_name + '\n')
@@ -557,9 +566,11 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             # del param_type_dict[param_name]
 
         # Then write set parameters
-        logging.info('  Set parameters')
+        logging.info('Set parameters')
         for param_name in sorted(param_name_dict.keys()):
             logging.debug('  {0}'.format(param_name))
+            if param_name in ["psta_mon","outlet_sta"]:
+                    print "gotcha"
             output_f.write(break_str+'\n')
             output_f.write('{0} {1}\n'.format(
                 param_name, param_width_dict[param_name]))
@@ -584,7 +595,10 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     logging.info('\nDone!')
 
 def prod(iterable):
+    #if len(iterable) > 0:
     return reduce(operator.mul, iterable, 1)
+    #else:
+    #    return 0
 
 
 def isfloat(s):
