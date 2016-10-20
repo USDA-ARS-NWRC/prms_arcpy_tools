@@ -47,7 +47,6 @@ def soil_parameters(config_path, overwrite_flag=False, debug_flag=False):
     log_console.setLevel(logging.DEBUG)
     log_console.setFormatter(logging.Formatter('%(message)s'))
     logging.getLogger('').addHandler(log_console)
-    logging.info('\nPRMS Soil Parameters')
 
     # Check and load input parameters from config file
     hru.read_soil_parameters()

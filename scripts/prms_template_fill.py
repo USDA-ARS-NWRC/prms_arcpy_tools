@@ -328,10 +328,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         dimen_names = [dm for dm in param_dimen_names_dict[param]]        
         values_count = prod( [int(dimen_size_dict[dn]) for dn in dimen_names if dimen_size_dict[dn]])           
         param_values_count_dict[param] = values_count
-        if param in ["psta_mon", "tsta_elev", "psta_elev"]:
-            print [param, values_count]
 
-     # Apply default values to full dimension of default parameters
+    # Apply default values to full dimension of default parameters
     logging.info('\nSetting static parameters from defaults')
     for param_name, param_default in param_default_dict.items():
         param_values_count = param_values_count_dict[param_name]
@@ -569,8 +567,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         logging.info('Set parameters')
         for param_name in sorted(param_name_dict.keys()):
             logging.debug('  {0}'.format(param_name))
-            if param_name in ["psta_mon","outlet_sta"]:
-                    print "gotcha"
             output_f.write(break_str+'\n')
             output_f.write('{0} {1}\n'.format(
                 param_name, param_width_dict[param_name]))
