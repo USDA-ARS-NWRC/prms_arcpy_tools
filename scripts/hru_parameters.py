@@ -23,6 +23,7 @@ from arcpy.sa import *
 # import numpy as np
 
 from support_functions import *
+from _sqlite3 import Row
 
 
 def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
@@ -304,11 +305,14 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
     cell_id_col_row_func(hru.polygon_path, hru.id_field)
 
     # Cell Lat/Lon
-    logging.info('  Calculating cell lat/lon')
+    logging.info('  Calculating HRU lat/lon')
     cell_lat_lon_func(hru.polygon_path, hru.lat_field, hru.lon_field, hru.sr.GCS)
+    
+    logging.info('  Calculating HRU x/y')
+    cell_xy_func(hru.polygon_path, hru.x_field, hru.y_field)
 
     # Cell Area
-    logging.info('  Calculating cell area (acres)')
+    logging.info('  Calculating HRU area (acres)')
     arcpy.CalculateField_management(
         hru.polygon_path, hru.area_field, '!SHAPE.AREA@acres!', 'PYTHON')
 
@@ -425,13 +429,28 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 
 
 def cell_xy_func(hru_param_path, x_field, y_field):
-    """"""
-    fields = ('SHAPE@XY', x_field, y_field)
+    """
+    Converts the xy to albers projection which is
+    required for hru_x/y by prms.
+    """
+    sr = arcpy.SpatialReference("NAD 1983 USFS R9 Albers (Meters)")
+    s = "/"
+    seq = [str(d) for d in hru_param_path.split("\\")[0:-2]]
+    seq.append("albers.shp")
+    hru_albers = s.join(seq)
+        
+    arcpy.Project_management(hru_param_path, hru_albers, sr)
+    
+    fields = ('SHAPE@XY')
+    albers_c = arcpy.da.SearchCursor(hru_albers, fields) 
+    fields = (x_field, y_field)
     with arcpy.da.UpdateCursor(hru_param_path, fields) as u_cursor:
         for row in u_cursor:
-            row[1], row[2] = row[0]
+            alb_row = albers_c.next()
+            row[0], row[1] = alb_row[0]
             u_cursor.updateRow(row)
             del row
+    del u_cursor,albers_c
 
 
 def cell_lat_lon_func(hru_param_path, lat_field, lon_field, gcs_sr):
