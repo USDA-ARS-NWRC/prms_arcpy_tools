@@ -126,7 +126,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         del dimen_size
         
     # These parameters equal the total number of HRUs  in the HRU shapefile
-    for dimen_name in ['ngw','nhru', 'nhrucell', 'nssr']:
+    for dimen_name in ['ngw','nhru', 'nhrucell', 'nradpl']:
         dimen_size_dict[dimen_name] = hru_count
         logging.info('  {0} = {1}'.format(
             dimen_name, dimen_size_dict[dimen_name]))
