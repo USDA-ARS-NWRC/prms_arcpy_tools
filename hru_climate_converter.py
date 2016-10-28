@@ -13,6 +13,7 @@ from fileinput import filename
 import __main__
 import pandas as pd
 import numpy as np
+from __main__ import __name__
 
 
 class OnlineClimateFile(object):
@@ -23,33 +24,36 @@ class OnlineClimateFile(object):
             ValueError("\nExpected filename to be type str not {0}".format(type(filename)))
         
         df = pd.read_csv(self.filename,parse_dates=True)
-        df
-#         #Is the param file from the online interface or generated locally?
-# 
-#         #First line @s,parameters
-#         if param_lines[0][0]=="@":
-#             print "\nWeb interface generated file detected."
-#             self.names  = get_interface_params(param_lines,f_len)
-# 
-#         #First line text from user.
-#         else:
-#             print "\nLocally generated file detected."
-#             self.names  = get_local_params(param_lines,f_len)
-# 
-#         
-# #             if i>0:
-# #                 if param_lines[i-1][0:3]=="####":
-# #                     print param_lines[i]
-# #  
-def print_missing_names(their_lst, our_lst):
-    for their_name in their_lst:
-        for our_name in our_lst:
-            if their_name==our_name:
-                break
-        else:
-            print their_name
+        
+        #Gather and edit the date to match the format needs for prms
+    	for index, row in df.iterrows():
+            orig_date = df.get_value(index,"date")
+            month, day, year = orig_date.split("/")
+            prms_date = " ".join([year,month,day,"0","0", "0"])
+            df.set_value(index,"date",prms_date)
+            
+        self.output_data_file(df,"tmin","RCEW_Tmin.data")
+            
+        def output_data_file(self,df,col_str,filename):
+            """
+            Searches dataframe work for columns having the col_str,
+            creates a new data frame work with the date append at the front
+            of each line.
+            Writes the file in space delimited format to filename
+            """
+            df2 = pd.DataFrame(df["date"])
+            frames = []
+            frames.append(df2)
+            for name in list(df.columns.values):
+                if col_str in name:
+                    frames.append(df[name])
+            result = pd.concat(frames)
+            
+            result.to_csv(filename," ")
+
+
 if __name__=='__main__':
-    my_file = "C:/Users/micah.johnson/Downloads/data-hru.csv"
+    my_file = "/home/micahjohnson/Documents/data-hru.csv"
     
     ui_file = OnlineClimateFile(my_file)
    
