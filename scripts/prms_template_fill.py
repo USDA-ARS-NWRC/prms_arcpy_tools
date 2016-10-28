@@ -126,7 +126,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         del dimen_size
         
     # These parameters equal the total number of HRUs  in the HRU shapefile
-    for dimen_name in ['ngw','nhru', 'nhrucell', 'nradpl']:
+    for dimen_name in ['nhru', 'nradpl']:
         dimen_size_dict[dimen_name] = hru_count
         logging.info('  {0} = {1}'.format(
             dimen_name, dimen_size_dict[dimen_name]))
@@ -151,24 +151,24 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 #             [int(row[1]) for row in s_cursor if int(row[1]) > 0]))
 #     logging.info('  nreach = {0}'.format(dimen_size_dict['nreach']))
 #    
-    # Getting number of stream segments
-    logging.info('Calculating number of stream segments')
-    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID"])
-    nsegment = 0
-    for segment in stream_segments:
-        nsegment +=1
-    dimen_size_dict['nsegment']=nsegment
-    logging.info('  nsegment = {0}'.format(dimen_size_dict['nsegment']))
+#     # Getting number of stream segments
+#     logging.info('Calculating number of stream segments')
+#     stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID"])
+#     nsegment = 0
+#     for segment in stream_segments:
+#         nsegment +=1
+#     dimen_size_dict['nsegment']=nsegment
+#     logging.info('  nsegment = {0}'.format(dimen_size_dict['nsegment']))
 
     # Getting number of subbasins
-    logging.info('Calculating number of unique subbasins')
-    logging.info('  Subbasins are {0} >= 0'.format(
-        hru.subbasin_field))
-    value_fields = (hru.id_field, hru.subbasin_field)
-    with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
-        dimen_size_dict['nsub'] = len(list(set(
-            [int(row[1]) for row in s_cursor if int(row[1]) > 0])))
-    logging.info('  nsub = {0}'.format(dimen_size_dict['nsub']))
+#     logging.info('Calculating number of unique subbasins')
+#     logging.info('  Subbasins are {0} >= 0'.format(
+#         hru.subbasin_field))
+#     value_fields = (hru.id_field, hru.subbasin_field)
+#     with arcpy.da.SearchCursor(hru.polygon_path, value_fields) as s_cursor:
+#         dimen_size_dict['nsub'] = len(list(set(
+#             [int(row[1]) for row in s_cursor if int(row[1]) > 0])))
+#     logging.info('  nsub = {0}'.format(dimen_size_dict['nsub']))
 
     # Link HRU field names to parameter names in '.param'
     param_name_dict = dict()
@@ -532,7 +532,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         # Then write unset dimensions
         logging.info('  Unset dimensions')
         for dimen_name in sorted(dimen_size_dict.keys()):
-            logging.debug('  {0}'.format(dimen_name))
+            logging.debug('      {0}'.format(dimen_name))
             output_f.write(break_str+'\n')
             output_f.write(dimen_name+'\n')
             output_f.write(str(dimen_size_dict[dimen_name])+'\n')
