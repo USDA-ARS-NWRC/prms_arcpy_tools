@@ -4,7 +4,7 @@ ndays,366
 ndepl,2
 ndeplval,22
 nevap,0
-ngw,1
+ngw,CALCULATED
 nhru,CALCULATED
 nmonths,12
 nobs,0
@@ -18,6 +18,4 @@ nssr,CALCULATED
 nsub,CALCULATED
 ntemp,0
 one,1
-mxnsos,1
 ncascade,0
-nradpl,CALCULATED
