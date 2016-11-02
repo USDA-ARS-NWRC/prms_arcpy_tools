@@ -2,7 +2,7 @@ NAME,SIZE
 ncascdgw,0
 ndays,366
 ndepl,2
-ndeplval,11
+ndeplval,22
 nevap,0
 ngw,1
 nhru,CALCULATED
@@ -14,7 +14,7 @@ nsegment,CALCULATED
 nlake,CALCULATED
 nsnow,0
 nsol,0
-nssr,1
+nssr,CALCULATED
 nsub,CALCULATED
 ntemp,0
 one,1
