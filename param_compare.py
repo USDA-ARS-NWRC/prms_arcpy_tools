@@ -89,11 +89,17 @@ def print_missing_names(their_lst, our_lst):
         else:
             print their_name
 if __name__=='__main__':
-    my_file = "C:/Users/Public/Documents/Micahs_RCEW/prms_input/25k_rcew.params"
-    their_file = "C:/Users/Public/Documents/George_online_files/params.csv"
+#     Comparing Scotts and mine
+#     my_file = "C:/Users/Public/Documents/Micahs_RCEW/prms_input/25k_rcew.params"
+#     their_file = "C:/Users/Public/Documents/George_online_files/params.csv"
     #their_file = "C:/Users/Public/Documents/PRMS_FromBruce_scott/Tuol.scott.params"
+    
+    my_file = "/home/micahjohnson/projects/RCEW_Model/prms_input/25k_rcew.params"
+    their_file = "/home/micahjohnson/projects/prms4.0.2_linux/projects/acf/input/acf.params"    
+    
     our_params = ParamFile(my_file)
     their_params = ParamFile(their_file)
+    
     print "\nThese are the parameters not found in the file comparison:\n\n\t{0} \n\t\t\t\tVS \n\t{1}".format(my_file,their_file)   
     print_missing_names(their_params.names,our_params.names)        
    
