@@ -8,15 +8,12 @@ ngw,1
 nhru,CALCULATED
 nmonths,12
 nobs,0
-nrain,0
 nratetbl,0
 nsegment,CALCULATED
 nlake,CALCULATED
-nsnow,0
 nsol,0
 nssr,1
 nsub,CALCULATED
-ntemp,0
 one,1
 mxnsos,1
 ncascade,0
