@@ -84,7 +84,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Calculate the TOSEGMENT, k_coef, x_coef
     logging.info("\nCalculating tosegment, k_coef, and x_coef parameters")
     stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["FID", "to_node", "tosegment", "k_coef", "x_coef"])
-    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID","from_node"])
+    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID","from_node"])
 
     #Search all streams and find those whos from_nodes match another stream's to_node to determine tosegment param
     for  segment in stream_segments:
@@ -104,8 +104,8 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
  
     # Calculate the hru_segement
     logging.info("\nCalculating hru_segment")
-    stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID", "grid_code"])
-    all_hrus = arcpy.da.UpdateCursor(hru.polygon_path, ["FID","gridcode","HRU_SEG"])
+    stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID", "grid_code"])
+    all_hrus = arcpy.da.UpdateCursor(hru.polygon_path, ["OBJECTID","gridcode","HRU_SEG"])
 
     #Search all streams and HRU to find matching Gridcode to assign the HRU_segment param
     for  hru in all_hrus:
