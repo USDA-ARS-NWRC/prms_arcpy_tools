@@ -54,7 +54,6 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
     # Check impervious parameters from config file
     hru.read_impervious_parameters()     
    
-
     # Build output folder if necessary
     imperv_temp_ws = os.path.join(hru.param_ws, 'impervious_rasters')
     if not os.path.isdir(imperv_temp_ws):

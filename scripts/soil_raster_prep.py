@@ -69,15 +69,6 @@ def soil_raster_prep(config_path, overwrite_flag=False, debug_flag=False):
     ksat_path = os.path.join(soil_temp_ws, 'ksat.img')
     soil_depth_path = os.path.join(soil_temp_ws, 'soil_depth.img')
 
-    # Root depth is calculated by veg script
-    # veg_temp_ws = os.path.join(hru.param_ws, 'veg_rasters')
-    # root_depth_path = os.path.join(veg_temp_ws, 'root_depth.img')
-    # if not arcpy.Exists(root_depth_path):
-    #    logging.error(
-    #        '\nERROR: Root depth raster does not exists' +
-    #        '\nERROR: Try re-running veg_parameters script\n')
-    #    sys.exit()
-
 
     # Set ArcGIS environment variables
     arcpy.CheckOutExtension('Spatial')
@@ -296,7 +287,7 @@ if __name__ == '__main__':
     logging.info(log_f.format('Current Directory:', os.getcwd()))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
 
-    # Prepare GSFLOW Soil Rasters
+    # Prepare PRMS Soil Rasters
     soil_raster_prep(
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)

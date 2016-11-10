@@ -154,7 +154,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
 #    
     # Getting number of stream segments
     logging.info('Calculating number of stream segments')
-    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["OBJECTID"])
+    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["FID"])
     nsegment = 0
     for segment in stream_segments:
         nsegment +=1

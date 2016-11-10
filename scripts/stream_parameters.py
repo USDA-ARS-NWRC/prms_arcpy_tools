@@ -83,8 +83,8 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     
     # Calculate the TOSEGMENT, k_coef, x_coef
     logging.info("\nCalculating tosegment, k_coef, and x_coef parameters")
-    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["FID", "to_node", "tosegment", "k_coef", "x_coef"])
-    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID","from_node"])
+    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["FID", "TO_NODE", "tosegment", "k_coef", "x_coef"])
+    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID","FROM_NODE"])
 
     #Search all streams and find those whos from_nodes match another stream's to_node to determine tosegment param
     for  segment in stream_segments:
@@ -93,7 +93,7 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
         #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
         for compare in compare_stream_segments:
             if to_node == compare[1]:  #compare to _node to from_node
-                segment[2] = compare[0] # tosegment = compare stream fid
+                segment[2] = compare[0]+1 # tosegment = compare stream fid
                 break 
             
         stream_segments.updateRow(segment)
@@ -102,102 +102,47 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     #Delete the structures created for generating the stream tosegment parameter
     del stream_segments, compare_stream_segments, compare, segment
  
-    # Calculate the hru_segement
+    # Calculate the hru_segement by looking at how close points are to the streams. Take the smallest number as the answer
     logging.info("\nCalculating hru_segment")
-    stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["OBJECTID", "grid_code"])
-    all_hrus = arcpy.da.UpdateCursor(hru.polygon_path, ["OBJECTID","gridcode","HRU_SEG"])
+    stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID", "SHAPE@"])
+    all_hrus = arcpy.da.UpdateCursor(hru.polygon_path, ["FID","HRU_SEG"])
+    hru_centroids = arcpy.FeatureToPoint_management(hru.polygon_path)
+    hru_centers = arcpy.da.SearchCursor(hru_centroids, ["FID", "SHAPE@X","SHAPE@Y"])
 
-    #Search all streams and HRU to find matching Gridcode to assign the HRU_segment param
-    for  hru in all_hrus:
-        hru_gc = hru[1] #to_node value
-        #Check all other segments to see if they match the current segment's
-        #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
-        for stream in stream_segments:
-            if hru_gc == stream[1]:  #compare to _node to from_node
-                hru[2] = stream[0]
-                break 
-        all_hrus.updateRow(hru)
+    hru_seg = {}
+
+    for centroid in hru_centers:
+        x=centroid[1]
+        y=centroid[2]
+        dist_dict = {}
+
+        #Look at the combined distance a start and end point is away from the centroid
+        #and use the min dist as the solution **Not perfect.        
+        for strm in stream_segments:
+            dist = []
+            for pnt in [strm[1].firstPoint,strm[1].lastPoint]:
+                dist.append((x-pnt.X)**2 + (y-pnt.Y)**2
+            dist_dict[strm[0]]=average(dist) 
+  
+        hru_seg[centroid[0]] = min(dist_dict,key = dist_dict.get)
         stream_segments.reset()
-    
-    # Get stream length for each cell
-#     logging.info("Stream length")
-#     arcpy.MakeFeatureLayer_management(hru.polygon_path, hru_polygon_lyr)
-#     arcpy.SelectLayerByAttribute_management(
-#         hru_polygon_lyr, "NEW_SELECTION",
-#         ' \"{0}\" = 1 And "{1}" != 0'.format(hru.type_field, hru.iseg_field))
-#     length_path = os.path.join('in_memory', 'length')
-#     arcpy.Intersect_analysis(
-#         [hru_polygon_lyr, hru.streams_path],
-#         length_path, "ALL", "", "LINE")
-#     arcpy.Delete_management(hru_polygon_lyr)
-#      
-#     
-#     arcpy.CalculateField_management(
-#         hru.stream_path, length_field, '!shape.length@meters!', "PYTHON")
-#     length_dict = defaultdict(int)
-#      
-#         # DEADBEEF - This probably needs a maximum limit
-#     for row in arcpy.da.SearchCursor(
-#         length_path, [hru.id_field, length_field]):
-#         length_dict[int(row[0])] += int(row[1])
-#     fields = [hru.type_field, hru.iseg_field, hru.rchlen_field, hru.id_field]
-#     with arcpy.da.UpdateCursor(hru.polygon_path, fields) as update_c:
-#         for row in update_c:
-#             if (int(row[0]) == 1 and int(row[1]) != 0):
-#                 row[2] = length_dict[int(row[3])]
-#             else:
-#                 row[2] = 0
-#             update_c.updateRow(row)
-#     del length_dict, length_field, fields, hru_polygon_lyr
+        
+    #Assign the hru_segment.
+    for hru in all_hrus:
+        hru[1] = hru_seg[hru[0]]+1
+        all_hrus.updateRow(hru)
 
-#     # Set environment parameters
-#     env.extent = hru.extent
-#     env.cellsize = hru.cs
-#     env.outputCoordinateSystem = hru.sr
-# 
-#     # Build rasters
-#     if output_rasters_flag:
-#         logging.info("\nOutput model grid rasters")
-#         arcpy.PolygonToRaster_conversion(
-#             hru.polygon_path, hru.type_field, hru_type_raster,
-#             "CELL_CENTER", "", hru.cs)
-#         arcpy.PolygonToRaster_conversion(
-#             hru.polygon_path, hru.dem_adj_field, dem_adj_raster,
-#             "CELL_CENTER", "", hru.cs)
-#         arcpy.PolygonToRaster_conversion(
-#             hru.polygon_path, hru.iseg_field, iseg_raster,
-#             "CELL_CENTER", "", hru.cs)
-#         arcpy.PolygonToRaster_conversion(
-#             hru.polygon_path, hru.irunbound_field, irunbound_raster,
-#             "CELL_CENTER", "", hru.cs)
-#         arcpy.PolygonToRaster_conversion(
-#             hru.polygon_path, hru.segbasin_field, segbasin_raster,
-#             "CELL_CENTER", "", hru.cs)
-#         arcpy.PolygonToRaster_conversion(
-#             hru.polygon_path, hru.subbasin_field, subbasin_raster,
-#             "CELL_CENTER", "", hru.cs)
-# 
-#     # Build rasters
-#     if output_ascii_flag:
-#         logging.info("Output model grid ascii")
-#         arcpy.RasterToASCII_conversion(hru_type_raster, hru_type_ascii)
-#         arcpy.RasterToASCII_conversion(dem_adj_raster, dem_adj_ascii)
-#         arcpy.RasterToASCII_conversion(iseg_raster, iseg_ascii)
-#         arcpy.RasterToASCII_conversion(irunbound_raster, irunbound_ascii)
-#         arcpy.RasterToASCII_conversion(segbasin_raster, segbasin_ascii)
-#         arcpy.RasterToASCII_conversion(subbasin_raster, subbasin_ascii)
-#         sleep(5)
     logging.info('\nDone!')
+    del stream_segments,all_hrus,hru_centers,hru_seg,dist_dict
 
-def cell_distance(cell_a, cell_b, cs):
-    """"""
-    ai, aj = cell_a
-    bi, bj = cell_b
-    return math.sqrt((ai - bi) ** 2 + (aj - bj) ** 2) * cs
-
-# def calc_stream_width(flow_acc):
-#    return -2E-6 * flow_acc ** 2 + 0.0092 * flow_acc + 1
-
+def average(lst):
+    """
+    Takes the average of a list
+    """
+    sum = 0
+    for i in lst:
+        sum+=i 
+    return sum/len(lst)
 
 def arg_parse():
     """"""
