@@ -36,17 +36,24 @@ class OnlineClimateFile(object):
             orig_date = self.df.get_value(index,"date")
 
             try:
-                month, day, year = orig_date.split("/")
-
+                if "/" in orig_date:
+                    month, day, year = orig_date.split("/")
+                    
+                elif "-" in orig_date:
+                    year, month, day = orig_date.split("-")                    
+            
             except:
+                
                 if index == 0:
                     print "\nError: Unexpected line before data in csv file, try deleting the row with value types.\n CSVFILE line {0}".format(index+2)
                 else:
                     print "\nError: Unknown issue with the date column on line {0} in csv file".format(index+2)
                 raise SystemExit
             
-            prms_date = ' '.join([year,month,day,'0','0', '0'])
-            self.df.set_value(index,"date",prms_date)
+            prms_date = {"year":year,"month":month,"day":day,"hour":"0","minute":"0", "second":"0"}
+        
+            for time_name, time_value in prms_date.items():
+                self.df.set_value(index, time_name,time_value)
 
     def output_data_file(self,col_str,filename):
         """
@@ -55,22 +62,23 @@ class OnlineClimateFile(object):
         of each line.
         Writes the file in space delimited format to filename
         """
-        df2 = pd.DataFrame(self. df["date"])
         frames = []
+        df2 = pd.DataFrame(self.df[["year","month","day","hour","minute","second"]])         
         frames.append(df2)
+        
         for name in list(self.df.columns.values):
             header_name = name.split("[")
             if col_str in header_name[0]:
                 #If we have a name match then add the name plus the associated hru i.e. tmin[23]
                 df2[name] = self.df[name]
         
-        vals_len = len(list(df2.columns.values))-1
+        vals_len = len(list(df2.columns.values))-6
         #Provide feedback is usr provided string was not found.
         if vals_len <= 1 :
             print "\nWarning: Column name {0} was not found in the file.".format(col_str)
         
         else:
-            print "\nWriting {0} columns that contained the string {1}". format(vals_len,col_str)
+            print "\nWriting {0} columns that contained the string {1}". format(vals_len, col_str)
                     
         with open(filename,'w') as f:
             #Append the PRMS expected Header
@@ -78,18 +86,45 @@ class OnlineClimateFile(object):
             f.write("{0} {1}\n".format(col_str,vals_len))
             
             f.write("########################################\n")
-            df2.to_csv(f,"\t", header = False, index = False)
+            df2.to_csv(f," ", header = False, index = False)
             f.close()
         print "\tData file outputted to {0}".format(filename)
 
-if __name__=='__main__':
-    my_file = "/home/micahjohnson/projects/eWFS/RCEW/data/climate/data-hru.csv"
-    ui_file = OnlineClimateFile(my_file)
+    def write_climate_data(self,prms_input_dir):
+        """
+        Writes all the data required for PRMS Climate by HRU
+        data to their respective files in the appropriate format
+        for local prms runs.
+        """
+        
+        climate = ["tmin","tmax", "precip", "swe"]
+        for data in climate:
+            self.output_data_file(data,prms_input_dir + data + ".data")
+   
+    def write_runoff_data(self,prms_input_dir):
+        """
+        eWSF allows the user to collact station data to be used for prms with 
+        ease. This converts the file to prms local executable to read.
+        
+        args:
+            prms_input_dir    This is the location of the directory where PRMS will looks for data
+        """
+        
+        data = "runoff"
+        self.output_data_file(data,prms_input_dir + data + ".data")
 
-    ui_file.output_data_file("tmin","/home/micahjohnson/projects/RCEW_Model/prms_input/RCEW_Tmin.data")
-    ui_file.output_data_file("tmax","/home/micahjohnson/projects/RCEW_Model/prms_input/RCEW_Tmax.data")
-    ui_file.output_data_file("precip","/home/micahjohnson/projects/RCEW_Model/prms_input/RCEW_precip.data")
-    ui_file.output_data_file("swe","/home/micahjohnson/projects/RCEW_Model/prms_input/RCEW_swe.data")
+
+if __name__=='__main__':
+
+#     my_file = "/home/micahjohnson/projects/eWFS/RCEW/data/climate/data-hru.csv"
+#     prms_input_dir = "/home/micahjohnson/projects/RCEW_Model/prms_input/"
     
+    my_file = "/home/micahjohnson/projects/eWFS/BRB/data/climate/data-sta.csv"
+    prms_input_dir = "/home/micahjohnson/projects/BRB_Model/prms_input/"
+        
+    ui_file = OnlineClimateFile(my_file)   
+    #ui_file.write_climate_data(prms_input_dir)
+    ui_file.write_runoff_data(prms_input_dir)
+
 
    
