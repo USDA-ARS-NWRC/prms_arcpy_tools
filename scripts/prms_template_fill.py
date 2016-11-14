@@ -27,7 +27,8 @@ from string import upper
 
 
 def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
-    """Fill PRMS Parameter Template File
+    """
+    Fill PRMS Parameter Template File
 
     Args:
         config_file (str): Project config file path
@@ -126,7 +127,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         del dimen_size
         
     # These parameters equal the total number of HRUs  in the HRU shapefile
-    for dimen_name in ['ngw','nhru', 'nhrucell', 'nradpl']:
+    for dimen_name in ['ngw','nhru', 'nhrucell', 'nradpl','nssr',]:
         dimen_size_dict[dimen_name] = hru_count
         logging.info('  {0} = {1}'.format(
             dimen_name, dimen_size_dict[dimen_name]))
