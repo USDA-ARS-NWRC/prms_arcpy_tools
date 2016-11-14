@@ -313,8 +313,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             
             #Check if it is at the outlet. we can only handle one outlet at the moment.
             if "O" in station_type:
-                #Index is zero based, count is not.
-                obs_params['outlet_sta'] = 0                
+                obs_params['outlet_sta'] = 0            
                 logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
             else:
                 logging.info("\tFound Runnoff Station named {0}".format(station[0]))
@@ -323,7 +322,6 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         for key,value in obs_params.items():
             param_values_dict[key][i] = value
 
-    
     #Update all the parameter sizes again.
     for param in param_name_dict:
         dimen_names = [dm for dm in param_dimen_names_dict[param]]        
@@ -364,7 +362,7 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         
         #Stream parameters have to come from stream shapefile not hru, so collect the related params here and index later.
         if type(value) is str and value in ["TOSEGMENT"]:
-            strm_param_field_dict[key]=value
+            strm_param_field_dict[key] = value
         # Add all string valued params except "calculated" 
         elif type(value) is str and value != "CALCULATED":
             param_field_dict[key] = value

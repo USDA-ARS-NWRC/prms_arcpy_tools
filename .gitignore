@@ -35,3 +35,4 @@
 .pydevproject
 .metadata
 *.prj
+*.dir

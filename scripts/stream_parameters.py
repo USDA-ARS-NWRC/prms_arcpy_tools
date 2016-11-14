@@ -121,8 +121,9 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
         for strm in stream_segments:
             dist = []
             for pnt in [strm[1].firstPoint,strm[1].lastPoint]:
-                dist.append((x-pnt.X)**2 + (y-pnt.Y)**2
-            dist_dict[strm[0]]=average(dist) 
+                dist.append((x-pnt.X)**2 + (y-pnt.Y)**2)
+
+            dist_dict[strm[0]]=min(dist) 
   
         hru_seg[centroid[0]] = min(dist_dict,key = dist_dict.get)
         stream_segments.reset()

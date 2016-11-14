@@ -171,7 +171,7 @@ def hru_parameters(config_path, overwrite_flag=False, debug_flag=False):
 #     add_field_func(hru.polygon_path, hru.crt_fill_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.elev_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.area_field, 'DOUBLE')
-    add_field_func(hru.polygon_path, hru.aspect_field, 'LONG')
+    add_field_func(hru.polygon_path, hru.aspect_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.slope_deg_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.slope_rad_field, 'DOUBLE')
     add_field_func(hru.polygon_path, hru.slope_pct_field, 'DOUBLE')
