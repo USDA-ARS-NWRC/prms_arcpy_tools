@@ -123,7 +123,7 @@ def impervious_parameters(config_path, overwrite_flag=False, debug_flag=False):
         #    '0.01 * !{0}!'.format(hru.imperv_pct_field), 'PYTHON')
         arcpy.CalculateField_management(
             hru.polygon_path, hru.carea_max_field,
-            '0.01 * !{0}!'.format(hru.imperv_pct_field), 'PYTHON')
+            '1 - !{0}!'.format(hru.imperv_pct_field), 'PYTHON')
     else:
         # arcpy.CalculateField_management(
         #    hru.polygon_path, hru.carea_min_field,
