@@ -313,7 +313,8 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
             
             #Check if it is at the outlet. we can only handle one outlet at the moment.
             if "O" in station_type:
-                obs_params['outlet_sta'] = 0            
+                obs_params['outlet_sta'] = dimen_size_dict["nobs"]
+           
                 logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
             else:
                 logging.info("\tFound Runnoff Station named {0}".format(station[0]))

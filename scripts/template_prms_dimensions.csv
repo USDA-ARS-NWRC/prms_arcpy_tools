@@ -7,7 +7,7 @@ nevap,0
 ngw,CALCULATED
 nhru,CALCULATED
 nmonths,12
-nobs,0
+nobs,CALCULATED
 nrain,0
 nratetbl,0
 nsegment,CALCULATED

@@ -83,18 +83,22 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     
     # Calculate the TOSEGMENT, k_coef, x_coef
     logging.info("\nCalculating tosegment, k_coef, and x_coef parameters")
-    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["FID", "TO_NODE", "tosegment", "k_coef", "x_coef"])
-    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID","FROM_NODE"])
+    stream_segments = arcpy.da.UpdateCursor(hru.stream_path, ["FID", "SHAPE@", "TOSEGMENT", "k_coef", "x_coef"])
+    compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID","SHAPE@"])
 
     #Search all streams and find those whos from_nodes match another stream's to_node to determine tosegment param
     for  segment in stream_segments:
-        to_node = segment[1] #to_node value
+        pnt = segment[1].lastPoint
         #Check all other segments to see if they match the current segment's
         #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
         for compare in compare_stream_segments:
-            if to_node == compare[1]:  #compare to _node to from_node
+            if pnt.X == compare[1].firstPoint.X and pnt.Y == compare[1].firstPoint.Y:
                 segment[2] = compare[0]+1 # tosegment = compare stream fid
+
+#             if to_node == compare[1]:  #compare to _node to from_node
+#                 segment[2] = compare[0]+1 # tosegment = compare stream fid
                 break 
+        print segment[2]
             
         stream_segments.updateRow(segment)
         compare_stream_segments.reset()
