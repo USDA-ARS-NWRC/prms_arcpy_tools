@@ -119,8 +119,8 @@ if __name__=='__main__':
 #     my_file = "/home/micahjohnson/projects/eWFS/RCEW/data/climate/data-hru.csv"
 #     prms_input_dir = "/home/micahjohnson/projects/RCEW_Model/prms_input/"
     
-    my_file = "/home/micahjohnson/projects/eWFS/BRB/data/climate/data-sta.csv"
-    prms_input_dir = "/home/micahjohnson/projects/BRB_Model/prms_input/"
+    my_file = "/home/scotthavens/Documents/Projects/PRMS/BRB/data/stationData/runoff_data-sta_final.csv"
+    prms_input_dir = "/home/scotthavens/Documents/Projects/PRMS/BRB/prms_input"
         
     ui_file = OnlineClimateFile(my_file)   
     #ui_file.write_climate_data(prms_input_dir)
