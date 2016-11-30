@@ -4,34 +4,83 @@
 Allows a user to easily edit a PRMS parameter file using thresholds and specifying most values.
 '''
 
-import pandas as pd
-import os, csv
 import argparse
 import sys
 
-
 class ParamEdit(object):
-    def __init__(self,file, parameter, new_value, upper=None,lower = None, selector = None ):
-        
-        
-        if selector ==None:
-            selector = parameter             
-        print "\nOpening Parameter file for editing..."
-        param_lines, lines_len = self.get_lines(file)
+    def __init__(self,file, parameter, new_value, upper=None,lower = None, selector = None, thresholding = False, scaling = False, incrementing = False, subbasin = None):
+
         if upper:
             upper = float(upper)
         if lower:
-            lower = float(lower)    
-        parameter_floc = self.find_parameter(parameter,param_lines, lines_len)
-        selector_floc = self.find_parameter(selector,param_lines, lines_len)
+            lower = float(lower)  
+        if subbasin:
+            subbasin = int(subbasin)              
+
+        if selector ==None:
+            selector = parameter 
+                    
+        self.selector = selector
+        self.file = file
+        self.parameter = parameter
+        self.upper = upper
+        self.lower = lower
+        self.subbasin = subbasin
+        self.new_value = new_value
+       
+        print "\nOpening Parameter file for editing..."
+
         
-        ids  = self.get_ids(selector_floc, param_lines, upper,lower)
+        if thresholding:
+            self.threshholding()
         
-        new_lines = self.set_param_values(parameter_floc, ids, new_value, param_lines)
+        elif scaling:
+            self.scaling()
         
-        self.write_lines(file, new_lines)
+        elif incrementing:
+            self.incrementing()
+        else:
+          self.blanket_change()
+                
         print "\n Done!"
+    
+    def blanket_change(self):
+        print "\nNo explicit edits requested. All Values being changed..."
+        parameter_floc, ids, param_lines = self.return_edit_info()        
+        new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'r')
+        self.write_lines(self.file, new_lines)
+    def threshholding(self):
+        print "\nThresholding style changes being applied..."
+
+        parameter_floc, ids, param_lines = self.return_edit_info()        
+        new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'r')
+        self.write_lines(self.file, new_lines)
+
+    def incrementing(self):
+        print "\nIncrementing style changes being applied..."
+        parameter_floc, ids, param_lines = self.return_edit_info()        
+        new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'i')
+        self.write_lines(self.file, new_lines)            
+    
+    def scaling(self):
+        print "\nScaling style changes being applied..."
+        parameter_floc, ids, param_lines = self.return_edit_info()        
+        new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'s')
+        self.write_lines(self.file, new_lines)    
         
+    def return_edit_info(self):
+        """
+        Does all the leg work for editing lines. 
+        Returns all the variable required for that.
+        """
+        
+        param_lines, lines_len = self.get_lines(self.file)
+        parameter_floc = self.find_parameter(self.parameter,param_lines, lines_len)
+        selector_floc = self.find_parameter(self.selector,param_lines, lines_len)
+        
+        ids  = self.get_ids(selector_floc, param_lines, self.upper,self.lower,self.subbasin)
+        return parameter_floc, ids, param_lines
+    
     def get_lines(self,filename):
         """
         Gets all the lines from param file and returns them as a list 
@@ -52,8 +101,6 @@ class ParamEdit(object):
             f.writelines(lines)
             f.close()
         print "\nParameter was written to: \n{0}".format(filename)
-        
-            
             
     def find_parameter(self, name, lines, lines_len):
         """
@@ -74,7 +121,7 @@ class ParamEdit(object):
         else:
             return i
         
-    def get_ids(self, name_floc, lines, upper = None, lower = None):
+    def get_ids(self, name_floc, lines, upper = None, lower = None, subbasin= None):
         """
         Return the hru ids of hrus whose specified parameter falls between upper and lower
         
@@ -82,23 +129,42 @@ class ParamEdit(object):
             name_floc       The file line location of a parameter that is being used to select hru IDS for editing
             uppper          The upper bound on the parameter being used for selecting.
             lower           The lower threshold for which the selection parameter is measured.
+            subbasin        An extra filter to allow filter by subassin ID
 
         returns:
             List of integers representing hru IDs.
         """
         print "\nRetrieving IDs from {0}...".format(lines[name_floc].strip())
+        hru_id_in_sub = []
+        if subbasin:
+                "\nUsing subbasin id {0}".format(subbasin)
+                #Retrieve HUR IDs that exist in subassin id
+                sub_floc = self.find_parameter("hru_subbasin", lines, len(lines))
+                dimension, rows, cols, data_len, data_type, data_start, data_end = self.get_param_info(sub_floc,lines)
+                for i in range(data_start, data_start + rows):
+                    value = self.string_to_data(data_type,lines[i],lines)
+                    #Hru id is one based.
+                    hru_id = i - data_start+1
+                    if value == subbasin:
+                        hru_id_in_sub.append(hru_id)
+
         dimension, rows, cols, data_len, data_type, data_start, data_end = self.get_param_info(name_floc,lines)
         ids = []
         message = "\tCollecting all hru ids using parameter {0}".format(self.string_to_data(str, lines[name_floc],lines)) 
         if lower:
             message += " >= {0}".format(lower)
-            if upper:
+            if upper or subbasin:
                 message+= " and"
         if upper:
             message += " <= {0}".format(upper)
+            if subbasin:
+                message += "and"
+        if subbasin:
+            message+= " using Subbasin ID {0}".format(subbasin)
 
         print message
         
+        #Cylce through data checking bounds and subbasin ids
         for i in range(data_start, data_start + rows):
             value = self.string_to_data(data_type,lines[i],lines)
             #Hru id is one based.
@@ -118,7 +184,16 @@ class ParamEdit(object):
                         ids.append(hru_id)
                 else:
                     ids.append(hru_id)
-        return ids
+        result = ids
+        #Check for subbasin match if using subbasin. Removing those who are not
+        if subbasin:
+            result = []
+            for i in ids:
+                if i in hru_id_in_sub:
+                    result.append(i)
+            
+
+        return result
     
     def string_to_data(self,data_type,str_data,lines):
         """
@@ -232,7 +307,7 @@ class ParamEdit(object):
         for rec in recommendations:
             print "{0}".format(rec)
             
-    def set_param_values(self, name_floc, hru_ids, new_value, lines):
+    def set_param_values(self, name_floc, hru_ids, new_value, lines, value_applied):
         """
         Goes to a parameter and set the parameter values to new value according to the hru_id. returns the new list of lines edited.
         """
@@ -254,12 +329,25 @@ class ParamEdit(object):
             #Data is stored in a single column but is specified as multiple columns, meaning the data will by cols X dimensions long.
             for i in hru_ids:
                 line_id = i + data_start
-                lines[line_id] = str(new_value) + '\n'
+
+                if value_applied == 'r':
+                    lines[line_id] = str(new_value) + '\n'
+                elif value_applied=='i':
+                    data = self.string_to_data(data_type, lines[line_id],lines)
+                    data +=new_value
+                    lines[line_id] = str(data) + '\n'
+                elif value_applied=='s':
+                    data = self.string_to_data(data_type, lines[line_id],lines)
+                    data *=new_value
+                    lines[line_id] = str(data) + '\n'
+                else:
+                    ValueError("Unrecognized input in set_param_values. Argument value_applied {0} not an option".format(value_applied))
+                    
                 iter +=1
             data_start+=rows
-
+        action_dict = {'i':"incremented by",'s':"scaled by","r":"replaced with"}    
         
-        print "\n\t{0} values in {1} have been changed to {2}".format(iter, lines[name_floc].strip(), new_value)       
+        print "\n\t{0} values in {1} were {2} {3}".format(iter, lines[name_floc].strip(), action_dict[value_applied], new_value)       
         if iter != len(hru_ids) * cols:
             print "\n WARNING: Something appears to have gone wrong, {0} values were requested to be changed but {1} were.".format(cols*len(hru_ids), iter)
         return lines 
@@ -295,6 +383,19 @@ if __name__ == "__main__":
                         required=True,
                         help = "The new value to be entered into all the values selected")
     
+    parser.add_argument('--thresholding','-t',
+                        action='store_true',
+                        help = "thresholding allows a user to specify bounds for which to replace a value to -n NEW_VALUE if its within using -u and/or -l")
+    parser.add_argument('--scaling','-s',
+                        action='store_true',
+                        help = "scaling allows a user to scale a parameter by  multiplying by NEW_VALUE if its within using -u and/or -l")
+    parser.add_argument('--incrementing','-i',
+                    action='store_true',
+                    help = "incrementing allows a user to specify incremental changes for a parameter by += new value")
+    parser.add_argument('--subbasin','-b',
+                type=int,
+                help = "subbasin allows a user to specify changes to specific subbasin using changes for a parameter by any other of the edits.")
+    
     args = parser.parse_args()
     
   
@@ -303,5 +404,9 @@ if __name__ == "__main__":
                      selector = args.by_variable,
                      upper = args.upper_thresh,
                      lower = args.lower_thresh,
-                     new_value = args.new_value)
+                     new_value = args.new_value,
+                     thresholding = args.thresholding,
+                     scaling = args.scaling,
+                     incrementing = args.incrementing,
+                     subbasin = args.subbasin)
       
