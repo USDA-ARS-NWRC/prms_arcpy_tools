@@ -40,7 +40,7 @@ class ParamEdit(object):
         elif incrementing:
             self.incrementing()
         else:
-          self.blanket_change()
+            self.blanket_change()
                 
         print "\n Done!"
     
