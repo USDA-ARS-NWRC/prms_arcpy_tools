@@ -6,9 +6,12 @@ Allows a user to easily edit a PRMS parameter file using thresholds and specifyi
 
 import argparse
 import sys
+import numpy as np
 
 class ParamEdit(object):
-    def __init__(self,file, parameter, new_value, upper=None,lower = None, selector = None, thresholding = False, scaling = False, incrementing = False, subbasin = None):
+    def __init__(self, file, parameter, new_value, upper=None,lower = None, selector = None, 
+                 thresholding = False, scaling = False, incrementing = False, subbasin = None,
+                 selected_cols = None):
 
         if upper:
             upper = float(upper)
@@ -17,8 +20,15 @@ class ParamEdit(object):
         if subbasin:
             subbasin = int(subbasin)              
 
-        if selector ==None:
+        if selector == None:
             selector = parameter 
+
+        if selected_cols == None:
+            selected_cols = 'all'
+        else:
+            sc = selected_cols.split(',')
+            sc = [int(x) for x in sc]
+            selected_cols = np.array(sc)
                     
         self.selector = selector
         self.file = file
@@ -27,6 +37,8 @@ class ParamEdit(object):
         self.lower = lower
         self.subbasin = subbasin
         self.new_value = new_value
+        
+        self.selected_col = selected_cols
        
         print "\nOpening Parameter file for editing..."
 
@@ -144,7 +156,7 @@ class ParamEdit(object):
                 for i in range(data_start, data_start + rows):
                     value = self.string_to_data(data_type,lines[i],lines)
                     #Hru id is one based.
-                    hru_id = i - data_start+1
+                    hru_id = i - data_start
                     if value == subbasin:
                         hru_id_in_sub.append(hru_id)
 
@@ -262,7 +274,7 @@ class ParamEdit(object):
             data_len = info[2]
             data_type = info[3]
             data_start = floc + 4
-            data_end = floc+data_len
+            data_end = data_start + data_len
              
         else:
             info_len = 5
@@ -273,7 +285,7 @@ class ParamEdit(object):
             data_len = info[3]
             data_type = info[4]
             data_start = floc + 5
-            data_end = floc+data_len
+            data_end = data_start + data_len
         
         #Rows is always the same line
         rows = info[1]
@@ -325,31 +337,68 @@ class ParamEdit(object):
 #             
 #         print "\nERROR: New value of type {0} does nto match parameter {1} which is of type {2}".format(str(type(new_value)),lines[name_floc].strip(), data_type)
 #         sys.exit()
-        for col in range(cols):
-            #Data is stored in a single column but is specified as multiple columns, meaning the data will by cols X dimensions long.
-            for i in hru_ids:
-                line_id = i + data_start
 
-                if value_applied == 'r':
-                    lines[line_id] = str(new_value) + '\n'
-                elif value_applied=='i':
-                    data = self.string_to_data(data_type, lines[line_id],lines)
-                    data +=new_value
-                    lines[line_id] = str(data) + '\n'
-                elif value_applied=='s':
-                    data = self.string_to_data(data_type, lines[line_id],lines)
-                    data *=new_value
-                    lines[line_id] = str(data) + '\n'
-                else:
-                    ValueError("Unrecognized input in set_param_values. Argument value_applied {0} not an option".format(value_applied))
-                    
-                iter +=1
-            data_start+=rows
+        if type(self.selected_col) is str:
+            selected_col = np.arange(cols)
+        else:
+            selected_col = self.selected_col
+
+
+        # try something a little different, convert the whole lines to numpy, then reshape
+        lns = lines[data_start+1:data_end+1]
+        
+        # conver the data to the data type then reshape to the correct size
+        data = np.array([self.string_to_data(data_type, x,lines) for x in lns])
+        data = data.reshape((cols, rows)).transpose()
+        
+        hru_ids = np.array(hru_ids) - 1 # go from 1 based to 0 based
+        # change the data based on what was selected
+        for col in selected_col:
+            if value_applied == 'r':
+                data[hru_ids, col] = new_value
+            elif value_applied=='i':
+                data[hru_ids, col] += new_value
+            elif value_applied=='s':
+                data[hru_ids, col] *= new_value
+            else:
+                ValueError("Unrecognized input in set_param_values. Argument value_applied {0} not an option".format(value_applied))
+        
+        iter = len(hru_ids) * len(selected_col)
+        
+        # change the data back for insertion
+        d = data.transpose().reshape((data_len, 1))
+        for i,v in enumerate(d):
+            line_id = i + data_start + 1
+            lines[line_id] = str(v[0]) + '\n'
+        
+#         for col in range(cols):
+#             #Data is stored in a single column but is specified as multiple columns, meaning the data will by cols X dimensions long.
+#             for i in hru_ids:
+#                 line_id = i + data_start
+# 
+#                 if value_applied == 'r':
+#                     lines[line_id] = str(new_value) + '\n'
+#                 elif value_applied=='i':
+#                     data = self.string_to_data(data_type, lines[line_id],lines)
+#                     data +=new_value
+#                     lines[line_id] = str(data) + '\n'
+#                 elif value_applied=='s':
+#                     data = self.string_to_data(data_type, lines[line_id],lines)
+#                     data *=new_value
+#                     lines[line_id] = str(data) + '\n'
+#                 else:
+#                     ValueError("Unrecognized input in set_param_values. Argument value_applied {0} not an option".format(value_applied))
+#                     
+#                 iter +=1
+#             data_start+=rows
+
         action_dict = {'i':"incremented by",'s':"scaled by","r":"replaced with"}    
         
-        print "\n\t{0} values in {1} were {2} {3}".format(iter, lines[name_floc].strip(), action_dict[value_applied], new_value)       
-        if iter != len(hru_ids) * cols:
-            print "\n WARNING: Something appears to have gone wrong, {0} values were requested to be changed but {1} were.".format(cols*len(hru_ids), iter)
+        print "\n\t{0} values in {1} were {2} {3}".format(iter, lines[name_floc].strip(), action_dict[value_applied], new_value)
+        
+        # this warning won't check against anything anymore       
+#         if iter != len(hru_ids) * cols:
+#             print "\n WARNING: Something appears to have gone wrong, {0} values were requested to be changed but {1} were.".format(cols*len(hru_ids), iter)
         return lines 
 
         
@@ -396,6 +445,10 @@ if __name__ == "__main__":
                 type=int,
                 help = "subbasin allows a user to specify changes to specific subbasin using changes for a parameter by any other of the edits.")
     
+    parser.add_argument('--column','-c',
+                type=str,
+                help = "column allows a user to specify changes to a specific column if the parameter is multi-dimensional.")
+    
     args = parser.parse_args()
     
   
@@ -408,5 +461,6 @@ if __name__ == "__main__":
                      thresholding = args.thresholding,
                      scaling = args.scaling,
                      incrementing = args.incrementing,
-                     subbasin = args.subbasin)
+                     subbasin = args.subbasin,
+                     selected_cols = args.column)
       
