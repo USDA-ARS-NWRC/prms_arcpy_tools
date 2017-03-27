@@ -252,6 +252,7 @@ class HRUParameters():
         self.tosegment        = fields_cfg.get('FIELDS', 'tosegment')
         self.x_coef           = fields_cfg.get('FIELDS', 'x_coef')
         self.stream_path      = inputs_cfg.get('INPUTS', 'streams_path')
+        self.flow_acc_raster  = inputs_cfg.get('INPUTS', 'flow_acc_raster')
 
 
         # if set_ppt_zones_flag:
@@ -600,6 +601,14 @@ class HRUParameters():
                 ('\nERROR: Stream shapefiles does not exist' +
                  '\nERROR:   {0}').format(
                      self.streams_path))
+            sys.exit()
+            
+        self.flow_acc_path = self.inputs_cfg.get('INPUTS', 'flow_acc_raster')
+        if not arcpy.Exists(self.flow_acc_path):
+            logging.error(
+                ('\nERROR: Flow accumulation raster does not exist' +
+                 '\nERROR:   {0}').format(
+                     self.flow_acc_raster))
             sys.exit()
 
 
@@ -1698,6 +1707,33 @@ def raster_obj_to_array(input_obj, mask_extent=None, return_nodata=False):
         return output_array, output_nodata
     else:
         return output_array
+    
+    
+def raster_to_array_with_xy(input_path):
+    """
+    Read the raster into an array along with the X,Y data. Since the
+    point (0,0) is the upper left, the Y return value will be from 
+    high to low
+    
+    Args:
+        input_path: The input path of the raster
+        
+    Returns:
+        raster: NumPy array of the raster
+        X: X values
+        Y: Y values
+    """
+    
+    # read the raster into an array
+    raster = Raster(input_path)
+    array = arcpy.RasterToNumPyArray(raster)
+        
+    # get the X,Y arrays
+    extent = raster.extent
+    X = np.arange(extent.XMin, extent.XMax, raster.meanCellWidth)
+    Y = np.arange(extent.YMax, extent.YMin, -raster.meanCellHeight)
+        
+    return array, X, Y
 
 
 def array_to_raster(input_array, output_path, pnt, cs, mask_array=None):
