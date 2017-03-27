@@ -375,24 +375,24 @@ def dem_parameters(config_path, overwrite_flag=False, debug_flag=False):
         # arcpy.DeleteField_management(hru.polygon_path, hru.dem_sum_field)
         # arcpy.DeleteField_management(hru.polygon_path, hru.dem_count_field)
 
-    # Fill DEM_ADJ if it is not set
-    if all([row[0] == 0 for row in arcpy.da.SearchCursor(
-        hru.polygon_path, [hru.dem_adj_field])]):
-        logging.info('Filling {0} from {1}'.format(
-            hru.dem_adj_field, hru.dem_adj_copy_field))
-        arcpy.CalculateField_management(
-            hru.polygon_path, hru.dem_adj_field,
-            'float(!{0}!)'.format(hru.dem_adj_copy_field), 'PYTHON')
-    elif hru.reset_dem_adj_flag:
-        logging.info('Filling {0} from {1}'.format(
-            hru.dem_adj_field, hru.dem_adj_copy_field))
-        arcpy.CalculateField_management(
-            hru.polygon_path, hru.dem_adj_field,
-            'float(!{0}!)'.format(hru.dem_adj_copy_field), 'PYTHON')
-    else:
-        logging.info(
-            ('{0} appears to already have been set and ' +
-             'will not be overwritten').format(hru.dem_adj_field))
+        # Fill DEM_ADJ if it is not set
+        if all([row[0] == 0 for row in arcpy.da.SearchCursor(
+            hru.polygon_path, [hru.dem_adj_field])]):
+            logging.info('Filling {0} from {1}'.format(
+                hru.dem_adj_field, hru.dem_adj_copy_field))
+            arcpy.CalculateField_management(
+                hru.polygon_path, hru.dem_adj_field,
+                'float(!{0}!)'.format(hru.dem_adj_copy_field), 'PYTHON')
+        elif hru.reset_dem_adj_flag:
+            logging.info('Filling {0} from {1}'.format(
+                hru.dem_adj_field, hru.dem_adj_copy_field))
+            arcpy.CalculateField_management(
+                hru.polygon_path, hru.dem_adj_field,
+                'float(!{0}!)'.format(hru.dem_adj_copy_field), 'PYTHON')
+        else:
+            logging.info(
+                ('{0} appears to already have been set and ' +
+                 'will not be overwritten').format(hru.dem_adj_field))
 
     # HRU_SLOPE in radians
     logging.info('Calculating {0} (Slope in Radians)'.format(

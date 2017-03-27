@@ -389,10 +389,11 @@ class HRUParameters():
             raw_input('  Press ENTER to continue')
             
         # Check that dem_adj_copy_field exists
-        if len(arcpy.ListFields(self.polygon_path, self.dem_adj_copy_field)) == 0:
-            logging.error('\nERROR: dem_adj_copy_field {0} does not exist\n'.format(
-                self.dem_adj_copy_field))
-            sys.exit()
+        if self.calc_flow_acc_dem_flag:
+            if len(arcpy.ListFields(self.polygon_path, self.dem_adj_copy_field)) == 0:
+                logging.error('\nERROR: dem_adj_copy_field {0} does not exist\n'.format(
+                    self.dem_adj_copy_field))
+                sys.exit()
         
         
     def read_veg_parameters(self):

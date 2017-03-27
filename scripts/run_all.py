@@ -118,6 +118,8 @@ def calculate_all_parameters(config_path, data_name='ALL', overwrite_flag=False,
         config_path=args.ini, overwrite_flag=args.overwrite,
         debug_flag=args.loglevel==logging.DEBUG)
     logging.info("\nParameters are now written to file and can be used for PRMS Simulations.")
+    
+    
 def arg_parse():
     """"""
     parser = argparse.ArgumentParser(
