@@ -26,7 +26,6 @@ from arcpy.sa import *
 import numpy as np
 
 from support_functions import *
-from matplotlib.lines import segment_hits
 
 # the max iterations and window (w) will depend on
 # how large the HRUs are and how many steps (w) are 
