@@ -67,7 +67,12 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     prms_dimen_csv_path = config.get('INPUTS', 'prms_dimen_csv_path')
     prms_param_csv_path = config.get('INPUTS', 'prms_param_csv_path')
     parameter_ws = config.get('INPUTS', 'parameter_folder')
-    obs_station_loc_path = config.get('INPUTS', 'station_loc_path')
+    
+    if config.has_option('INPUTS', 'station_loc_path'):
+        obs_station_loc_path = config.get('INPUTS', 'station_loc_path')
+    else:
+        obs_station_loc_path = False
+        
     # Scratch workspace
     try:
         scratch_name = config.get('INPUTS', 'scratch_name')
@@ -99,10 +104,12 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
     if os.path.isfile(prms_parameter_path):
         os.remove(prms_parameter_path)
         
-    #Check is meterology location file is valid    
-    if not os.path.isfile(obs_station_loc_path):
-        logging.error('\nERROR: The station observations location CSV file \n{0} does not exist'.format(obs_station_loc_path))
-        sys.exit()
+    #Check is meterology location file is valid
+    if obs_station_loc_path:
+        if not os.path.isfile(obs_station_loc_path):
+            logging.error('\nERROR: The station observations location CSV file \n{0} does not exist'.format(obs_station_loc_path))
+            sys.exit()
+            
     #Get the total number of HRUs from shapefile
     hru_count = int(arcpy.GetCount_management(hru.polygon_path).getOutput(0))
 
@@ -272,56 +279,56 @@ def prms_template_fill(config_path, overwrite_flag=False, debug_flag=False):
         param_default_dict[param_name] = param_default
     #END of PRMS Parameter and dimensions CSV read in
 
-   
-    #Write in xlong and ylat and station type for obs stations
-    logging.info('\nReading Observations location CSV file:')
-
-    with open(obs_station_loc_path, 'r') as input_f:
-        station_lines = input_f.readlines()
-    station_lines = [l.strip().split(',') for l in station_lines]
-        
-    #Skip the first line b/c its a header
-    for i,station in enumerate(station_lines[1:]):
-        obs_params = {}
-        station_type = upper(station[6])
-        
-        #Check for temp stations
-        if "T" in station_type:
-            #Cycle through temp station params
-            for j, param in enumerate(['tsta_elev','tsta_xlong', 'tsta_ylat']):
-                obs_params[param] = float(station[j+3])
-                #param_values_count_dict[param]+=1
-            #increase the number of obs
-            dimen_size_dict["ntemp"]+=1
-
-            logging.info("\tFound Temperature Station named {0}".format(station[0]))
-        
-        #Check for precip stations
-        if "P" in station_type:
-            #Cycle through temp station params
-            for j, param in enumerate(['psta_elev','psta_xlong', 'psta_ylat']):
-                obs_params[param] = float(station[j+3])
-                #param_values_count_dict[param]+=1
-            #increase the number of obs
-            dimen_size_dict["nrain"]+=1
-
-            logging.info("\tFound Precipitation Station named {0}".format(station[0]))
-
-        #Check for runoff stations
-        if "R" in station_type:
-            dimen_size_dict["nobs"] +=1
+    if obs_station_loc_path:
+        #Write in xlong and ylat and station type for obs stations
+        logging.info('\nReading Observations location CSV file:')
+    
+        with open(obs_station_loc_path, 'r') as input_f:
+            station_lines = input_f.readlines()
+        station_lines = [l.strip().split(',') for l in station_lines]
             
-            #Check if it is at the outlet. we can only handle one outlet at the moment.
-            if "O" in station_type:
-                obs_params['outlet_sta'] = dimen_size_dict["nobs"]
-           
-                logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
-            else:
-                logging.info("\tFound Runnoff Station named {0}".format(station[0]))
+        #Skip the first line b/c its a header
+        for i,station in enumerate(station_lines[1:]):
+            obs_params = {}
+            station_type = upper(station[6])
             
-        #Record the values of the station params to our main dict for params.
-        for key,value in obs_params.items():
-            param_values_dict[key][i] = value
+            #Check for temp stations
+            if "T" in station_type:
+                #Cycle through temp station params
+                for j, param in enumerate(['tsta_elev','tsta_xlong', 'tsta_ylat']):
+                    obs_params[param] = float(station[j+3])
+                    #param_values_count_dict[param]+=1
+                #increase the number of obs
+                dimen_size_dict["ntemp"]+=1
+    
+                logging.info("\tFound Temperature Station named {0}".format(station[0]))
+            
+            #Check for precip stations
+            if "P" in station_type:
+                #Cycle through temp station params
+                for j, param in enumerate(['psta_elev','psta_xlong', 'psta_ylat']):
+                    obs_params[param] = float(station[j+3])
+                    #param_values_count_dict[param]+=1
+                #increase the number of obs
+                dimen_size_dict["nrain"]+=1
+    
+                logging.info("\tFound Precipitation Station named {0}".format(station[0]))
+    
+            #Check for runoff stations
+            if "R" in station_type:
+                dimen_size_dict["nobs"] +=1
+                
+                #Check if it is at the outlet. we can only handle one outlet at the moment.
+                if "O" in station_type:
+                    obs_params['outlet_sta'] = dimen_size_dict["nobs"]
+               
+                    logging.info("\tFound Runnoff Station at an outlet named {0}".format(station[0]))
+                else:
+                    logging.info("\tFound Runnoff Station named {0}".format(station[0]))
+                
+            #Record the values of the station params to our main dict for params.
+            for key,value in obs_params.items():
+                param_values_dict[key][i] = value
 
     #Update all the parameter sizes again.
     for param in param_name_dict:
