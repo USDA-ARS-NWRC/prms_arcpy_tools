@@ -101,23 +101,23 @@ def stream_parameters(config_path, overwrite_flag=False, debug_flag=False):
     compare_stream_segments = arcpy.da.SearchCursor(hru.stream_path, ["FID","SHAPE@"])
 
     #Search all streams and find those whos from_nodes match another stream's to_node to determine tosegment param
-#     for  segment in stream_segments:
-#         pnt = segment[1].lastPoint
-#         #Check all other segments to see if they match the current segment's
-#         #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
-#         for compare in compare_stream_segments:
-#             if pnt.X == compare[1].firstPoint.X and pnt.Y == compare[1].firstPoint.Y:
-#                 segment[2] = compare[0]+1 # tosegment = compare stream fid
-#                 break 
-#             
-#         stream_segments.updateRow(segment)
-#         compare_stream_segments.reset()
-#
-#     #Delete the structures created for generating the stream tosegment parameter
-#     del stream_segments, compare_stream_segments, compare, segment
+    for segment in stream_segments:
+        pnt = segment[1].lastPoint
+        #Check all other segments to see if they match the current segment's
+        #This breaks as soon as a match is found therefore it is assumed that a stream does not split down stream
+        for compare in compare_stream_segments:
+            if pnt.X == compare[1].firstPoint.X and pnt.Y == compare[1].firstPoint.Y:
+                segment[2] = compare[0]+1 # tosegment = compare stream fid
+                break 
+             
+        stream_segments.updateRow(segment)
+        compare_stream_segments.reset()
+
+    #Delete the structures created for generating the stream tosegment parameter
+    del stream_segments, compare_stream_segments, compare, segment
  
     # Calculate the hru_segement by looking at how close points are to the streams. Take the smallest number as the answer
-    logging.info("\nCalculating hru_segment")
+    logging.info("\nCalculating to_segment")
     all_hrus = arcpy.da.UpdateCursor(hru.polygon_path, ["FID","SHAPE@","HRU_SEG"])
 #     all_hrus = arcpy.da.SearchCursor(hru.polygon_path, ["FID","SHAPE@","HRU_SEG"])
 #     hru_centroids = arcpy.FeatureToPoint_management(hru.polygon_path)
