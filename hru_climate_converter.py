@@ -9,11 +9,9 @@ The online platform takes data in a different format so this script converts the
 files for PRMS that is developed by the USGS and used locally.
 """
 
-from fileinput import filename
-import __main__
 import pandas as pd
 import numpy as np
-from __main__ import __name__
+import os
 
 class OnlineClimateFile(object):
     def __init__(self,filename,**kwargs):
@@ -31,7 +29,7 @@ class OnlineClimateFile(object):
             raise SystemExit
         
         #Gather and edit the date to match the format needs for prms
-    	for index, row in self.df.iterrows():
+        for index, row in self.df.iterrows():
 
             orig_date = self.df.get_value(index,"date")
 
@@ -111,7 +109,7 @@ class OnlineClimateFile(object):
         """
         
         data = "runoff"
-        self.output_data_file(data,prms_input_dir + data + ".data")
+        self.output_data_file(data, os.path.join(prms_input_dir, data + ".data"))
 
 
 if __name__=='__main__':
@@ -121,6 +119,9 @@ if __name__=='__main__':
     
     my_file = "/home/scotthavens/Documents/Projects/PRMS/BRB/data/stationData/runoff_data-sta_final.csv"
     prms_input_dir = "/home/scotthavens/Documents/Projects/PRMS/BRB/prms_input"
+    
+    my_file = r"C:\Users\shavens\Documents\Projects\CCAO_Studies\DeschutesBasinStudy\PRMS\data\stationData\runoff_swe_daily.csv"
+    prms_input_dir = r"C:\Users\shavens\Documents\Projects\CCAO_Studies\DeschutesBasinStudy\PRMS\prms_model\stationData"
         
     ui_file = OnlineClimateFile(my_file)   
     #ui_file.write_climate_data(prms_input_dir)

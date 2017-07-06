@@ -40,7 +40,7 @@ class ParamEdit(object):
         
         self.selected_col = selected_cols
        
-        print "\nOpening Parameter file for editing..."
+        print("\nOpening Parameter file for editing...")
 
         
         if thresholding:
@@ -54,28 +54,28 @@ class ParamEdit(object):
         else:
             self.blanket_change()
                 
-        print "\n Done!"
+        print("\n Done!")
     
     def blanket_change(self):
-        print "\nNo explicit edits requested. All Values being changed..."
+        print("\nNo explicit edits requested. All Values being changed...")
         parameter_floc, ids, param_lines = self.return_edit_info()        
         new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'r')
         self.write_lines(self.file, new_lines)
     def threshholding(self):
-        print "\nThresholding style changes being applied..."
+        print("\nThresholding style changes being applied...")
 
         parameter_floc, ids, param_lines = self.return_edit_info()        
         new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'r')
         self.write_lines(self.file, new_lines)
 
     def incrementing(self):
-        print "\nIncrementing style changes being applied..."
+        print("\nIncrementing style changes being applied...")
         parameter_floc, ids, param_lines = self.return_edit_info()        
         new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'i')
         self.write_lines(self.file, new_lines)            
     
     def scaling(self):
-        print "\nScaling style changes being applied..."
+        print("\nScaling style changes being applied...")
         parameter_floc, ids, param_lines = self.return_edit_info()        
         new_lines = self.set_param_values(parameter_floc, ids, self.new_value, param_lines,'s')
         self.write_lines(self.file, new_lines)    
@@ -112,7 +112,7 @@ class ParamEdit(object):
         with open(filename,'w+') as f:
             f.writelines(lines)
             f.close()
-        print "\nParameter was written to: \n{0}".format(filename)
+        print("\nParameter was written to: \n{0}".format(filename))
             
     def find_parameter(self, name, lines, lines_len):
         """
@@ -127,7 +127,7 @@ class ParamEdit(object):
 
         #EOF?
         if i ==lines_len-1:
-            print "\nError: Parameter {0} was not found in parameter file.".format(name)
+            print("\nError: Parameter {0} was not found in parameter file.".format(name))
             self.recomend_str(name, lines)
             sys.exit()
         else:
@@ -146,7 +146,7 @@ class ParamEdit(object):
         returns:
             List of integers representing hru IDs.
         """
-        print "\nRetrieving IDs from {0}...".format(lines[name_floc].strip())
+        print("\nRetrieving IDs from {0}...".format(lines[name_floc].strip()))
         hru_id_in_sub = []
         if subbasin:
                 "\nUsing subbasin id {0}".format(subbasin)
@@ -156,7 +156,7 @@ class ParamEdit(object):
                 for i in range(data_start, data_start + rows):
                     value = self.string_to_data(data_type,lines[i],lines)
                     #Hru id is one based.
-                    hru_id = i - data_start
+                    hru_id = i - data_start + 1
                     if value == subbasin:
                         hru_id_in_sub.append(hru_id)
 
@@ -174,13 +174,14 @@ class ParamEdit(object):
         if subbasin:
             message+= " using Subbasin ID {0}".format(subbasin)
 
-        print message
+        print(message)
         
         #Cylce through data checking bounds and subbasin ids
         for i in range(data_start, data_start + rows):
             value = self.string_to_data(data_type,lines[i],lines)
             #Hru id is one based.
             hru_id = i - data_start+1
+            
             #Two cases, 1. Upper and Lower defined, 2. Upper defined lower is not.
             if upper:
                 if lower:
@@ -238,7 +239,7 @@ class ParamEdit(object):
             if "** Parameters **" in line:
                 dimension_end = lines.index(line)
 
-        print "\tSearching for dimension {0}'s value in parameter file...".format(dimension_str.strip())
+        print("\tSearching for dimension {0}'s value in parameter file...".format(dimension_str.strip()))
         result = None
         
         for i in range(0,dimension_end+1):
@@ -250,7 +251,7 @@ class ParamEdit(object):
         if result:
             return result
         else:
-            print "\nERROR: Unable to find dimension {0}! Check parameter file.".format(dimension_str.strip())
+            print("\nERROR: Unable to find dimension {0}! Check parameter file.".format(dimension_str.strip()))
             sys.exit()
                         
          
@@ -273,7 +274,7 @@ class ParamEdit(object):
             cols = 1
             data_len = info[2]
             data_type = info[3]
-            data_start = floc + 4
+            data_start = floc + 5
             data_end = data_start + data_len
              
         else:
@@ -284,7 +285,7 @@ class ParamEdit(object):
             cols = info[2]
             data_len = info[3]
             data_type = info[4]
-            data_start = floc + 5
+            data_start = floc + 6
             data_end = data_start + data_len
         
         #Rows is always the same line
@@ -314,16 +315,16 @@ class ParamEdit(object):
             if float(i)/len(str) >0.8:
                 recommendations.append(new_str)
         
-        print "\nHINT:You are searching for {0}, did you mean to use these?".format(str)
-        print "\n"
+        print ("\nHINT:You are searching for {0}, did you mean to use these?".format(str))
+        print ("\n")
         for rec in recommendations:
-            print "{0}".format(rec)
+            print ("{0}".format(rec))
             
     def set_param_values(self, name_floc, hru_ids, new_value, lines, value_applied):
         """
         Goes to a parameter and set the parameter values to new value according to the hru_id. returns the new list of lines edited.
         """
-        print "\nSetting new values for {0}...".format(lines[name_floc].strip())         
+        print("\nSetting new values for {0}...".format(lines[name_floc].strip()))         
     
         dimension, rows, cols, data_len, data_type, data_start, data_end = self.get_param_info(name_floc,lines)
         #Cycle through every columns and every line of data.
@@ -345,7 +346,7 @@ class ParamEdit(object):
 
 
         # try something a little different, convert the whole lines to numpy, then reshape
-        lns = lines[data_start+1:data_end+1]
+        lns = lines[data_start:data_end]
         
         # conver the data to the data type then reshape to the correct size
         data = np.array([self.string_to_data(data_type, x,lines) for x in lns])
@@ -368,7 +369,7 @@ class ParamEdit(object):
         # change the data back for insertion
         d = data.transpose().reshape((data_len, 1))
         for i,v in enumerate(d):
-            line_id = i + data_start + 1
+            line_id = i + data_start
             lines[line_id] = str(v[0]) + '\n'
         
 #         for col in range(cols):
@@ -394,7 +395,7 @@ class ParamEdit(object):
 
         action_dict = {'i':"incremented by",'s':"scaled by","r":"replaced with"}    
         
-        print "\n\t{0} values in {1} were {2} {3}".format(iter, lines[name_floc].strip(), action_dict[value_applied], new_value)
+        print("\n\t{0} values in {1} were {2} {3}".format(iter, lines[name_floc].strip(), action_dict[value_applied], new_value))
         
         # this warning won't check against anything anymore       
 #         if iter != len(hru_ids) * cols:
